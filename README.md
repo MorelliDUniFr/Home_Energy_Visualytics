@@ -1,24 +1,7 @@
 # Home Energy Visualytics
 
 # Table of Contents
-
-- [Home Energy Visualytics](#home-energy-visualytics)
-  - [Table of Contents](#table-of-contents)
-  - [1. Introduction](#1-introduction)
-  - [2. Setup](#2-setup)
-	- [2.1 Configuration of Raspberry Pi via the Pi imager](#21-configuration-of-raspberry-pi-via-the-pi-imager)
-  - [3. Access to Raspberry Pi](#3-access-to-raspberry-pi)
-  - [4. Install dependencies](#4-install-dependencies)
-  - [5. Installing docker](#5-installing-docker)
-  - [6. Docker compose](#6-docker-compose)
-  - [7. MQTT Broker](#7-mqtt-broker)
-  - [8. Docker commands:](#8-docker-commands)
-  - [9. Transfer file](#9-transfer-file)
-  - [10. Check Raspi temperature](#10-check-raspi-temperature)
-  - [11. Streamlit](#11-streamlit)
-  - [12. Access gplugd](#12-access-gplugd)
-  - [13. Fix raspi problem with ip](#13-fix-raspi-problem-with-ip)
-  - [14. To create file to run at startup:](#14-to-create-file-to-run-at-startup)
+TODO
 
 ## 1. Introduction
 TODO

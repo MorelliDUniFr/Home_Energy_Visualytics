@@ -1,5 +1,5 @@
 services:
-  mqttbroker:
+  mqtt_broker:
     hostname: mosquitto
     image: eclipse-mosquitto:latest
     restart: always

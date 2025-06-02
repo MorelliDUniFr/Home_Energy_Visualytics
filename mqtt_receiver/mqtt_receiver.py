@@ -7,28 +7,34 @@ import pyarrow.parquet as pq
 import pandas as pd
 from datetime import datetime, timedelta
 import threading
+from config_loader import load_config
 
-# MQTT Broker Settings
-BROKER = "192.168.1.189"  # Use your broker's address
-PORT = 1883  # Default MQTT port
-TOPIC = "tele/gPlugDI_1E533C/SENSOR"
+config, config_dir = load_config()
 
-TRANSFER_TIMESTAMP = "16:40:00"
+# Load configuration
+config.read(config_dir)
+
+# Determine environment
+env = config['Settings']['environment']
+broker = config['MQTT']['broker']
+port = int(config['MQTT']['port'])
+topic = config['MQTT']['topic']
+transfer_timestamp = config['MQTT']['transfer_timestamp']
+daily_data_file = config['MQTT']['daily_data_file']
+whole_data_file = config['MQTT']['whole_data_file']
+data_path = config[env]['data_path']
+
 # Convert the string timestamp to a datetime object
-transfer_time = datetime.strptime(TRANSFER_TIMESTAMP, "%H:%M:%S")
+transfer_time = datetime.strptime(transfer_timestamp, "%H:%M")
 # Add 2 seconds to the transfer timestamp
 reset_time = transfer_time + timedelta(seconds=2)
 # Format the reset timestamp back to the string format
-RESET_TIMESTAMP = reset_time.strftime("%H:%M:%S")
-
-DATA_DIR = "/app/data"
-DAY_PARQUET_FILE = os.path.join(DATA_DIR, "mqtt_data_day.parquet")
-WHOLE_PARQUET_FILE = os.path.join(DATA_DIR, "mqtt_data_whole.parquet")
+RESET_TIMESTAMP = reset_time.strftime("%H:%M")
 
 # Ensure the directory exists
-if not os.path.exists(DATA_DIR):
+if not os.path.exists(data_path):
     print("Creating data directory...")
-    os.makedirs(DATA_DIR)
+    os.makedirs(data_path)
 
 # Prepare an empty DataFrame for the Parquet file (initially empty)
 columns_to_keep = ["timestamp", "Pi", "P1i", "P2i", "P3i",
@@ -78,10 +84,10 @@ def write_data_to_parquet():
             return
 
         # Append to the whole data file
-        append_to_parquet(raw_df, WHOLE_PARQUET_FILE)
+        append_to_parquet(raw_df, os.path.join(data_path, whole_data_file))
 
         # Write the data to the daily Parquet file
-        write_new_parquet_file(raw_df, DAY_PARQUET_FILE)
+        write_new_parquet_file(raw_df, os.path.join(data_path, daily_data_file))
 
         # Clear the DataFrame after writing
         raw_df = pd.DataFrame(columns=columns)
@@ -100,10 +106,9 @@ def check_and_write_daily_data():
 
     while True:
         now = datetime.now()
-        current_time = now.strftime("%H:%M:%S")
-
+        current_time = now.strftime("%H:%M")
         # Change the time to match when you want to trigger the action
-        if current_time == TRANSFER_TIMESTAMP and not already_written_today and not raw_df.empty:  # Ensure time format matches the expected one
+        if current_time == transfer_timestamp and not already_written_today and not raw_df.empty:  # Ensure time format matches the expected one
             print("Writing data for yesterday...")
             # Run the write function in a separate thread to avoid blocking the MQTT loop
             threading.Thread(target=write_data_to_parquet).start()
@@ -120,8 +125,8 @@ def check_and_write_daily_data():
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
     # Subscribe to the topic
-    client.subscribe(TOPIC)
-    print("Subscribed to topic:", TOPIC)
+    client.subscribe(topic)
+    print("Subscribed to topic:", topic)
 
 
 def on_message(client, userdata, msg):
@@ -155,8 +160,8 @@ client.on_connect = on_connect
 client.on_message = on_message
 
 # Connect to the broker and subscribe to the topic
-client.connect(BROKER, PORT, 0)
-print(f"Connected to broker {BROKER} on port {PORT}")
+client.connect(broker, port, 0)
+print(f"Connected to broker {broker} on port {port}")
 
 # Start the MQTT loop in a separate thread to allow the main program to continue
 client.loop_start()

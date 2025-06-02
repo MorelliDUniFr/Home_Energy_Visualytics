@@ -16,7 +16,20 @@ services:
     build: mqtt_receiver
     image: mqtt_receiver:latest
     volumes:
-      - /home/pi/mqtt_data:/app/data # Bind mount (host:container)
+      - /home/pi/data:/app/data # Bind mount (host:container)
+      - /home/pi/config.ini:/usr/src/app/config.ini
+    environment:
+      - TZ=Europe/Berlin
+    restart: always
+    network_mode: host
+    privileged: true
+
+  inference:
+    build: inference
+    image: inference:latest
+    volumes:
+      - /home/pi/data:/app/data # Bind mount (host:container)
+      - /home/pi/config.ini:/usr/src/app/config.ini
     environment:
       - TZ=Europe/Berlin
     restart: always

@@ -1,0 +1,12 @@
+Coffee Machine
+Dryer
+Freezer
+Fridge
+Lamp
+Laptop
+Microwave
+PC
+Router
+Tablet
+Washing Machine
+Other

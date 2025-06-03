@@ -118,7 +118,7 @@ def append_predictions(timestamps, predictions_np):
 
 def time_matches(target_time_str):
     now = datetime.now().time()
-    target = datetime.strptime(target_time_str, "%H:%M:%S").time()
+    target = datetime.strptime(target_time_str, "%H:%M").time()
     return now.hour == target.hour and now.minute == target.minute
 
 

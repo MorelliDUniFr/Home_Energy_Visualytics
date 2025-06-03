@@ -27,7 +27,7 @@ data_path = config[env]['data_path']
 # Convert the string timestamp to a datetime object
 transfer_time = datetime.strptime(transfer_timestamp, "%H:%M")
 # Add 2 seconds to the transfer timestamp
-reset_time = transfer_time + timedelta(seconds=2)
+reset_time = transfer_time + timedelta(minutes=1)
 # Format the reset timestamp back to the string format
 RESET_TIMESTAMP = reset_time.strftime("%H:%M")
 
@@ -43,6 +43,7 @@ columns_to_drop = ['SMid', 'Po', 'P1o', 'P2o', 'P3o', 'Ei', 'Ei1', 'Ei2', 'Eo', 
 columns = ["timestamp", 'SMid', 'Pi', 'Po', 'P1i', 'P1o', 'P2i', 'P2o', 'P3i', 'P3o',
            'V1', 'V2', 'V3', 'I1', 'I2', 'I3', 'Ei', 'Ei1', 'Ei2', 'Eo', 'Eo1', 'Eo2']
 raw_df = pd.DataFrame(columns=columns)
+already_written_today = False  # Flag to track if data has been written today
 
 def append_to_parquet(df, parquet_path):
     print("Appending data to parquet file...")
@@ -92,7 +93,7 @@ def write_data_to_parquet():
         # Clear the DataFrame after writing
         raw_df = pd.DataFrame(columns=columns)
 
-        print("Data successfully written to Parquet.")
+        print("Data successfully written to file")
 
     except Exception as e:
         print(f"Error while writing data: {e}")
@@ -101,8 +102,8 @@ def write_data_to_parquet():
 # Function to check if it's midnight and trigger the writing process
 def check_and_write_daily_data():
     global raw_df
+    global already_written_today
     print("Starting the time checking thread...")  # Debugging log
-    already_written_today = False
 
     while True:
         now = datetime.now()

@@ -6,6 +6,7 @@ from datetime import datetime, time
 import time as time_module  # To avoid name clash
 import os
 from config_loader import load_config
+from joblib import load
 
 config, config_dir = load_config()
 
@@ -24,6 +25,9 @@ model_path = os.path.join(data_path, model_file)
 inferred_data_path = os.path.join(data_path, inferred_data_file)
 infer_data_path = os.path.join(data_path, infer_data_file)
 appliances_path = os.path.join(data_path, appliances_file)
+
+input_scaler = load('../data/input_scaler.pkl')
+target_scaler = load('../data/target_scaler.pkl')
 
 BATCH_SIZE = 32
 
@@ -55,7 +59,9 @@ def create_day_dataset_from_file():
     timestamps = df['timestamp'].reset_index(drop=True)  # Keep timestamps for later
     df = df.drop(columns=['timestamp'])
 
-    X_day = df.values
+    # Apply normalization
+    X_day = input_scaler.transform(df.values)
+    # X_day = df.values
     return X_day, timestamps
 
 def run_inference(X_day):
@@ -102,6 +108,9 @@ def melt_dataframe(df):
 def append_predictions(timestamps, predictions_np):
     # Combine timestamps and predictions into DataFrame
     pred_df = pd.DataFrame(predictions_np, columns=[f'{appliances_list[i]}' for i in range(predictions_np.shape[1])])
+    # Inverse-transform predictions back to original appliance value ranges
+    pred_df[appliances_list] = target_scaler.inverse_transform(pred_df[appliances_list])
+
     pred_df.insert(0, 'timestamp', timestamps)
 
     pred_df = melt_dataframe(pred_df)

@@ -11,18 +11,15 @@ from config_loader import load_config
 
 config, config_dir = load_config()
 
-# Load configuration
-config.read(config_dir)
-
 # Determine environment
 env = config['Settings']['environment']
+data_path = config[env]['data_path']
 broker = config['MQTT']['broker']
 port = int(config['MQTT']['port'])
 topic = config['MQTT']['topic']
 transfer_timestamp = config['MQTT']['transfer_timestamp']
-daily_data_file = config['MQTT']['daily_data_file']
-whole_data_file = config['MQTT']['whole_data_file']
-data_path = config[env]['data_path']
+daily_data_file = config['Data']['daily_data_file']
+whole_data_file = config['Data']['whole_data_file']
 
 # Convert the string timestamp to a datetime object
 transfer_time = datetime.strptime(transfer_timestamp, "%H:%M")

@@ -41,9 +41,10 @@ def validate_config(config):
         'Settings': ['environment'],
         'development': ['data_path'],
         'production': ['data_path'],
-        'ML': ['path', 'training_dataset_file', 'appliances_file', 'model_file'],
-        'MQTT': ['broker', 'port', 'topic', 'transfer_timestamp', 'daily_data_file', 'whole_data_file'],
-        'Inference': ['inference_timestamp', 'inferred_data_file', 'infer_data_file']
+        'ML': ['path'],
+        'MQTT': ['broker', 'port', 'topic', 'transfer_timestamp'],
+        'Inference': ['inference_timestamp'],
+        'Data': ['training_dataset_file', 'appliances_file', 'model_file', 'input_scaler_file', 'target_scalers_file', 'daily_data_file', 'whole_data_file', 'inferred_data_file', 'infer_data_file']
     }
 
     for section, keys in required_keys.items():
@@ -78,36 +79,36 @@ def validate_config(config):
         raise FileNotFoundError(f"Data path '{data_path}' does not exist")
 
     # Ensure that the model file exists
-    model_file = config['ML']['model_file']
+    model_file = config['Data']['model_file']
     model_path = os.path.join(data_path, model_file)
     if not os.path.isfile(model_path):
         raise FileNotFoundError(f"Model file '{model_file}' does not exist in data path '{data_path}'")
 
     # Ensure that the appliances file exists
-    appliances_file = config['ML']['appliances_file']
+    appliances_file = config['Data']['appliances_file']
     appliances_path = os.path.join(data_path, appliances_file)
     if not os.path.isfile(appliances_path):
         raise FileNotFoundError(f"Appliances file '{appliances_file}' does not exist in data path '{data_path}'")
 
     # Ensure that the infer data file exists
-    infer_data_file = config['Inference']['infer_data_file']
+    infer_data_file = config['Data']['infer_data_file']
     infer_data_path = os.path.join(data_path, infer_data_file)
     if not os.path.isfile(infer_data_path):
         raise FileNotFoundError(f"Infer data file '{infer_data_file}' does not exist in data path '{data_path}'")
 
     # Ensure that the daily data file is a parquet file
-    daily_data_file = config['MQTT']['daily_data_file']
+    daily_data_file = config['Data']['daily_data_file']
     if not daily_data_file.endswith('.parquet'):
         raise ValueError(f"'daily_data_file' must be a .parquet file, got: {daily_data_file}")
 
     # Ensure that the whole data file is a parquet file
-    whole_data_file = config['MQTT']['whole_data_file']
+    whole_data_file = config['Data']['whole_data_file']
     if not whole_data_file.endswith('.parquet'):
         raise ValueError(f"'whole_data_file' must be a .parquet file, got: {whole_data_file}")
 
     # Ensure that the training dataset file exists
     if env == 'development':
-        training_dataset_file = config['ML']['training_dataset_file']
+        training_dataset_file = config['Data']['training_dataset_file']
         training_dataset_path = os.path.join(data_path, training_dataset_file)
         if not os.path.isfile(training_dataset_path):
             raise FileNotFoundError(
@@ -146,7 +147,7 @@ def validate_config(config):
         raise ValueError("Appliances file must have a .txt extension")
 
     # Ensure that the inferred data file is a .parquet file
-    inferred_data_file = config['Inference']['inferred_data_file']
+    inferred_data_file = config['Data']['inferred_data_file']
     if not inferred_data_file.endswith('.parquet'):
         raise ValueError("Inferred data file must have a .parquet extension")
 

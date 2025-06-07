@@ -2,34 +2,34 @@ import pandas as pd
 import torch
 import numpy as np
 from torch.utils.data import DataLoader, TensorDataset
-from datetime import datetime, time
-import time as time_module  # To avoid name clash
+from datetime import datetime
+import time as time_module
 import os
 from config_loader import load_config
 from joblib import load
 
 config, config_dir = load_config()
 
-# Load configuration
-config.read(config_dir)
-
 env = config['Settings']['environment']
 inference_timestamp = config['Inference']['inference_timestamp']
 data_path = config[env]['data_path']
-model_file = config['ML']['model_file']
-inferred_data_file = config['Inference']['inferred_data_file']
-infer_data_file = config['Inference']['infer_data_file']
-appliances_file = config['ML']['appliances_file']
+model_file = config['Data']['model_file']
+inferred_data_file = config['Data']['inferred_data_file']
+infer_data_file = config['Data']['infer_data_file']
+appliances_file = config['Data']['appliances_file']
+input_scaler_file = config['Data']['input_scaler_file']
+target_scalers_file = config['Data']['target_scalers_file']
+batch_size = int(config['Inference']['batch_size'])
 
 model_path = os.path.join(data_path, model_file)
 inferred_data_path = os.path.join(data_path, inferred_data_file)
 infer_data_path = os.path.join(data_path, infer_data_file)
 appliances_path = os.path.join(data_path, appliances_file)
+input_scaler_path = os.path.join(data_path, input_scaler_file)
+target_scalers_path = os.path.join(data_path, target_scalers_file)
 
-input_scaler = load('../data/input_scaler.pkl')
-target_scaler = load('../data/target_scaler.pkl')
-
-BATCH_SIZE = 32
+input_scaler = load(input_scaler_path)
+target_scaler = load(target_scalers_path)
 
 device = torch.device('cpu')
 
@@ -60,8 +60,7 @@ def create_day_dataset_from_file():
     df = df.drop(columns=['timestamp'])
 
     # Apply normalization
-    X_day = input_scaler.transform(df.values)
-    # X_day = df.values
+    X_day = input_scaler.transform(df)
     return X_day, timestamps
 
 def run_inference(X_day):
@@ -73,7 +72,7 @@ def run_inference(X_day):
 
     X_day_tensor = torch.tensor(X_day, dtype=torch.float32).to(device)
     day_dataset = TensorDataset(X_day_tensor)
-    day_loader = DataLoader(day_dataset, batch_size=BATCH_SIZE, shuffle=False)
+    day_loader = DataLoader(day_dataset, batch_size=batch_size, shuffle=False)
 
     predictions_all = []
     with torch.no_grad():
@@ -96,6 +95,7 @@ def melt_dataframe(df):
     # Convert timestamp and extract date, hour, month
     df_long['timestamp'] = pd.to_datetime(df_long['timestamp'])
     df_long['date'] = df_long['timestamp'].dt.date
+    df_long['minute'] = df_long['timestamp'].dt.minute
     df_long['hour'] = df_long['timestamp'].dt.hour
     df_long['month'] = df_long['timestamp'].dt.to_period('M')
 
@@ -109,7 +109,10 @@ def append_predictions(timestamps, predictions_np):
     # Combine timestamps and predictions into DataFrame
     pred_df = pd.DataFrame(predictions_np, columns=[f'{appliances_list[i]}' for i in range(predictions_np.shape[1])])
     # Inverse-transform predictions back to original appliance value ranges
-    pred_df[appliances_list] = target_scaler.inverse_transform(pred_df[appliances_list])
+    # pred_df[appliances_list] = target_scaler.inverse_transform(pred_df[appliances_list])
+    for appliance in appliances_list:
+        scaler = target_scaler[appliance]
+        pred_df[appliance] = scaler.inverse_transform(pred_df[[appliance]])
 
     pred_df.insert(0, 'timestamp', timestamps)
 
@@ -142,7 +145,6 @@ if __name__ == "__main__":
             if not already_run_today:
                 print(f"[{now}] Time matched — running inference...")
                 try:
-                    # X_day, timestamps = create_day_dataset()
                     X_day, timestamps = create_day_dataset_from_file()
                     predictions_np = run_inference(X_day)
                     append_predictions(timestamps, predictions_np)
@@ -152,4 +154,4 @@ if __name__ == "__main__":
         else:
             already_run_today = False  # Reset the flag after target time passes
 
-        time_module.sleep(1)
+        time_module.sleep(1)  # Check every 30 seconds

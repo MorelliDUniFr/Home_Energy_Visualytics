@@ -44,7 +44,7 @@ def validate_config(config):
         'ML': ['path'],
         'MQTT': ['broker', 'port', 'topic', 'transfer_timestamp'],
         'Inference': ['inference_timestamp'],
-        'Data': ['training_dataset_file', 'appliances_file', 'model_file', 'input_scaler_file', 'target_scalers_file', 'daily_data_file', 'whole_data_file', 'inferred_data_file', 'infer_data_file']
+        'Data': ['training_dataset_file', 'model_file', 'input_scaler_file', 'target_scalers_file', 'daily_data_file', 'whole_data_file', 'inferred_data_file', 'infer_data_file']
     }
 
     for section, keys in required_keys.items():
@@ -83,18 +83,6 @@ def validate_config(config):
     model_path = os.path.join(data_path, model_file)
     if not os.path.isfile(model_path):
         raise FileNotFoundError(f"Model file '{model_file}' does not exist in data path '{data_path}'")
-
-    # Ensure that the appliances file exists
-    appliances_file = config['Data']['appliances_file']
-    appliances_path = os.path.join(data_path, appliances_file)
-    if not os.path.isfile(appliances_path):
-        raise FileNotFoundError(f"Appliances file '{appliances_file}' does not exist in data path '{data_path}'")
-
-    # Ensure that the infer data file exists
-    infer_data_file = config['Data']['infer_data_file']
-    infer_data_path = os.path.join(data_path, infer_data_file)
-    if not os.path.isfile(infer_data_path):
-        raise FileNotFoundError(f"Infer data file '{infer_data_file}' does not exist in data path '{data_path}'")
 
     # Ensure that the daily data file is a parquet file
     daily_data_file = config['Data']['daily_data_file']
@@ -142,16 +130,13 @@ def validate_config(config):
     if not model_file.endswith('.pt'):
         raise ValueError("Model file must have a .pt extension")
 
-    # Ensure that the appliances file is a .txt file
-    if not appliances_file.endswith('.txt'):
-        raise ValueError("Appliances file must have a .txt extension")
-
     # Ensure that the inferred data file is a .parquet file
     inferred_data_file = config['Data']['inferred_data_file']
     if not inferred_data_file.endswith('.parquet'):
         raise ValueError("Inferred data file must have a .parquet extension")
 
     # Ensure that the infer data file is a .parquet file
+    infer_data_file = config['Data']['infer_data_file']
     if not infer_data_file.endswith('.parquet'):
         raise ValueError("Infer data file must have a .parquet extension")
 

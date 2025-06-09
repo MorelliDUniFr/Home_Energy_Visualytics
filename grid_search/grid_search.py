@@ -12,6 +12,8 @@ from torch.optim.lr_scheduler import StepLR
 # Preprocessing
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
+import time
+
 SEED = 42
 
 class SlidingWindowDataset(Dataset):
@@ -140,26 +142,6 @@ class NILMModel(nn.Module):
         return out
 
 
-class SoftF1Loss(nn.Module):
-    def __init__(self, epsilon=1e-7):
-        super(SoftF1Loss, self).__init__()
-        self.epsilon = epsilon
-
-    def forward(self, logits, labels):
-        # Sigmoid for binary classification
-        probs = torch.sigmoid(logits)
-        labels = labels.float()
-
-        # Calculate TP, FP, FN
-        tp = (probs * labels).sum(dim=0)
-        fp = (probs * (1 - labels)).sum(dim=0)
-        fn = ((1 - probs) * labels).sum(dim=0)
-
-        soft_f1 = 2 * tp / (2 * tp + fp + fn + self.epsilon)
-        loss = 1 - soft_f1.mean()
-        return loss
-
-
 def select_device():
     # Check for GPU availability
     if torch.cuda.is_available():
@@ -168,6 +150,8 @@ def select_device():
         device = torch.device("mps")
     else:
         device = torch.device("cpu")
+
+    print("Using device:", device)
 
     return device
 
@@ -278,7 +262,7 @@ def run_experiment(loss_fn, hidden_size, step_size, gamma, dropout_rate, sequenc
     train_dataset, val_dataset, test_dataset = random_split(
         dataset, [train_len, val_len, test_len], generator=generator)
 
-    batch_size = 64
+    batch_size = 256
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
                               pin_memory=True)  # shuffle=True for training
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
@@ -312,10 +296,7 @@ def main():
     input_columns = list(smart_meter_columns)
     target_appliances = appliances_columns
 
-    # Normalize the dataset
-    # input_scaler = StandardScaler()
-    # input_scaler = load('input_scaler.pkl')  # Load pre-trained scaler if available
-    input_scaler = StandardScaler()
+    input_scaler = MinMaxScaler()
     dataset[input_columns] = input_scaler.fit_transform(dataset[input_columns])
 
     # Normalize target appliances with one scaler per appliance
@@ -324,13 +305,7 @@ def main():
         scaler = MinMaxScaler()
         dataset[appliance] = scaler.fit_transform(dataset[[appliance]])
         target_scalers[appliance] = scaler
-    # targets_scaler = load('target_scalers.pkl')  # Load pre-trained scaler if available
 
-    # target_scaler = MinMaxScaler()
-    # dataset[target_appliances] = target_scaler.fit_transform(dataset[target_appliances])
-
-    # Start loop for grid search
-    # losses_list = [nn.L1Loss(), nn.MSELoss(), nn.SmoothL1Loss()]
     losses_list = [nn.MSELoss()]
     hidden_sizes = [64, 128, 256]
     step_sizes = [15]
@@ -349,8 +324,12 @@ def main():
     for i, (loss_fn, hidden_size, step_size, gamma, dropout, seq_length, stride, use_attention, num_layers) in enumerate(param_grid, 1):
         print(
             f"\nRun {i}/{total_runs}: loss={loss_fn.__class__.__name__}, hidden={hidden_size}, step={step_size}, gamma={gamma}, dropout={dropout}, seq_len={seq_length}, stride={stride}, use_attention={use_attention}, num_layers={num_layers}")
+
+        start = time.time()
         eval_result = run_experiment(loss_fn, hidden_size, step_size, gamma, dropout, seq_length, stride, use_attention, num_layers, dataset,
                                      input_columns, target_appliances, device)
+        end = time.time()
+        print(f"Run {i}/{total_runs} completed in {end - start:.2f} seconds with MSE: {eval_result}")
         results.append(
             {'loss_fn': loss_fn.__class__.__name__, 'hidden_size': hidden_size, 'step_size': step_size, 'gamma': gamma,
              'dropout': dropout, 'seq_length': seq_length, 'stride': stride, 'use_attention':use_attention, 'num_layers':num_layers, 'eval_result': eval_result})

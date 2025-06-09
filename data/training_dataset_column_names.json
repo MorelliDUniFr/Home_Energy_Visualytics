@@ -1,0 +1,33 @@
+{
+    "time": [
+        "timestamp"
+    ],
+    "household_info": [
+        "household_id"
+    ],
+    "sm_metrics": [
+        "powerl1",
+        "powerl2",
+        "powerl3",
+        "currentl1",
+        "currentl2",
+        "currentl3",
+        "voltagel1",
+        "voltagel2",
+        "voltagel3"
+    ],
+    "appliances": [
+        "Coffee Machine",
+        "Dryer",
+        "Freezer",
+        "Fridge",
+        "Lamp",
+        "Laptop",
+        "Microwave",
+        "PC",
+        "Router",
+        "Tablet",
+        "Washing Machine",
+        "Other"
+    ]
+}

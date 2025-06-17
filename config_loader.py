@@ -81,8 +81,6 @@ def validate_config(config):
     # Ensure that the model file exists
     model_file = config['Data']['model_file']
     model_path = os.path.join(data_path, model_file)
-    if not os.path.isfile(model_path):
-        raise FileNotFoundError(f"Model file '{model_file}' does not exist in data path '{data_path}'")
 
     # Ensure that the daily data file is a parquet file
     daily_data_file = config['Data']['daily_data_file']

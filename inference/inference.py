@@ -14,24 +14,23 @@ config, config_dir = load_config()
 env = config['Settings']['environment']
 inference_timestamp = config['Inference']['inference_timestamp']
 data_path = config[env]['data_path']
+models_dir = config['Data']['models_dir']
 model_file = config['Data']['model_file']
 inferred_data_file = config['Data']['inferred_data_file']
 infer_data_file = config['Data']['infer_data_file']
-# appliances_file = config['Data']['appliances_file']
 column_names_file = config['Data']['training_dataset_columns_file']
+scalers_dir = config['Data']['scalers_dir']
 input_scaler_file = config['Data']['input_scaler_file']
 target_scalers_file = config['Data']['target_scalers_file']
 batch_size = int(config['Inference']['batch_size'])
 
-model_path = os.path.join(data_path, model_file)
+model_path = os.path.join(data_path, models_dir)
 inferred_data_path = os.path.join(data_path, inferred_data_file)
 infer_data_path = os.path.join(data_path, infer_data_file)
-# appliances_path = os.path.join(data_path, appliances_file)
 input_scaler_path = os.path.join(data_path, input_scaler_file)
-target_scalers_path = os.path.join(data_path, target_scalers_file)
+target_scalers_path = os.path.join(data_path, scalers_dir)
 
 input_scaler = load(input_scaler_path)
-target_scaler = load(target_scalers_path)
 
 device = torch.device('cpu')
 
@@ -39,6 +38,7 @@ device = torch.device('cpu')
 with open(os.path.join(data_path, column_names_file), 'r') as file:
     column_names_json = json.load(file)
 
+appliances_list = column_names_json['appliances']
 
 def create_day_dataset_from_file():
     df = pd.read_parquet(infer_data_path)
@@ -51,12 +51,13 @@ def create_day_dataset_from_file():
     X_day = input_scaler.transform(df)
     return X_day, timestamps
 
-def run_inference(X_day):
-    model = torch.jit.load(model_path, map_location=device)
+def run_inference(X_day, appliance):
+    appliance_name = appliance.lower().replace(' ', '_')
+    model = torch.jit.load(os.path.join(model_path, appliance_name + model_file))
     model.eval()
 
     if len(X_day.shape) == 2:
-        X_day = np.expand_dims(X_day, axis=1)
+        X_day = np.expand_dims(X_day, axis=0)
 
     X_day_tensor = torch.tensor(X_day, dtype=torch.float32).to(device)
     day_dataset = TensorDataset(X_day_tensor)
@@ -67,6 +68,11 @@ def run_inference(X_day):
         for (batch_X,) in day_loader:
             batch_X = batch_X.to(device)
             batch_predictions = model(batch_X)
+
+            # Clamp predictions to be non-negative (power >= 0)
+            batch_predictions = torch.clamp(batch_predictions, min=0.0)
+
+            # Convert to NumPy after clamping
             predictions_all.append(batch_predictions.cpu().numpy())
 
     predictions_np = np.concatenate(predictions_all, axis=0)
@@ -93,27 +99,37 @@ def melt_dataframe(df):
     return df_long
 
 
-def append_predictions(timestamps, predictions_np):
-    # Combine timestamps and predictions into DataFrame
-    appliances_list = column_names_json['appliances']
-    pred_df = pd.DataFrame(predictions_np, columns=[f'{appliances_list[i]}' for i in range(predictions_np.shape[1])])
-    # Inverse-transform predictions back to original appliance value ranges
-    for appliance in appliances_list:
-        scaler = target_scaler[appliance]
-        pred_df[appliance] = scaler.inverse_transform(pred_df[[appliance]])
+def append_predictions(timestamps, predictions_dict):
+    """
+    timestamps: list of timestamps (len = total timesteps)
+    predictions_dict: dict of {appliance_name: np.ndarray of shape (total_timesteps,)}
+                      or (1, seq_len, 1) / (batch, seq_len, 1)
+    """
+    pred_df = pd.DataFrame({'timestamp': timestamps})
 
-    pred_df.insert(0, 'timestamp', timestamps)
+    for appliance, pred in predictions_dict.items():
+        print(f"Processing {appliance} - shape before reshape:", pred.shape)
+        appliance_name = appliance.lower().replace(' ', '_')
 
+        # Remove batch dimension if necessary
+        if pred.ndim == 3 and pred.shape[0] == 1:
+            pred = pred[0]  # shape: (seq_len, 1)
+        if pred.ndim == 2 and pred.shape[1] == 1:
+            pred = pred[:, 0]  # shape: (seq_len,)
+        elif pred.ndim == 3:
+            pred = pred.reshape(-1, pred.shape[2])[:, 0]  # flatten and squeeze
+
+        # Inverse scale
+        target_scaler = load(os.path.join(target_scalers_path, appliance_name + target_scalers_file))
+        pred_reshaped = pred.reshape(-1, 1)
+        pred_inverse = target_scaler.inverse_transform(pred_reshaped).flatten()
+
+        pred_df[appliance] = pred_inverse
+
+    # Melt and save
     pred_df = melt_dataframe(pred_df)
-
-    if os.path.exists(inferred_data_path):
-        complete_df = pd.read_parquet(inferred_data_path)
-        combined_df = pd.concat([complete_df, pred_df], ignore_index=True)
-    else:
-        combined_df = pred_df
-
-    combined_df.to_parquet(inferred_data_path, index=False)
-    print(f"[{datetime.now()}] Predictions appended to {inferred_data_path}")
+    pred_df.to_parquet(inferred_data_path, index=False)
+    print(f"[{datetime.now()}] Predictions for appliances {list(predictions_dict.keys())} appended to {inferred_data_path}")
 
 
 def time_matches(target_time_str):
@@ -134,12 +150,17 @@ if __name__ == "__main__":
                 print(f"[{now}] Time matched — running inference...")
                 try:
                     X_day, timestamps = create_day_dataset_from_file()
-                    predictions_np = run_inference(X_day)
-                    append_predictions(timestamps, predictions_np)
+                    predictions = {}
+                    for appliance in appliances_list:
+                        predictions_np = run_inference(X_day, appliance=appliance)
+                        predictions[appliance] = predictions_np
+
+                    append_predictions(timestamps, predictions)
+
                     already_run_today = True
                 except Exception as e:
                     print(f"[{now}] Error during inference: {e}")
         else:
             already_run_today = False  # Reset the flag after target time passes
 
-        time_module.sleep(1)  # Check every 30 seconds
+        time_module.sleep(30)

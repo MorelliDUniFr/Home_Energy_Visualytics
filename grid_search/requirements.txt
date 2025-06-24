@@ -1,4 +1,0 @@
-pandas
-torch
-scikit-learn
-fastparquet

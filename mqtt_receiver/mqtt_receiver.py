@@ -164,8 +164,10 @@ print(f"Connected to broker {broker} on port {port}")
 # Start the MQTT loop in a separate thread to allow the main program to continue
 client.loop_start()
 
+print('Transfer timestamp:', transfer_timestamp)
 # Start the midnight check in a separate thread
 threading.Thread(target=check_and_write_daily_data, daemon=True).start()
+
 
 # Run the main thread (blocking the program)
 while True:

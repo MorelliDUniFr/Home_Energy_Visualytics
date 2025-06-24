@@ -17,7 +17,7 @@ data_path = config[env]['data_path']
 models_dir = config['Data']['models_dir']
 model_file = config['Data']['model_file']
 inferred_data_file = config['Data']['inferred_data_file']
-infer_data_file = config['Data']['infer_data_file']
+infer_data_file = config['Data']['daily_data_file']
 column_names_file = config['Data']['training_dataset_columns_file']
 scalers_dir = config['Data']['scalers_dir']
 input_scaler_file = config['Data']['input_scaler_file']
@@ -34,11 +34,12 @@ input_scaler = load(input_scaler_path)
 
 device = torch.device('cpu')
 
-# Read appliance names from the text file
+# Read appliance names
 with open(os.path.join(data_path, column_names_file), 'r') as file:
     column_names_json = json.load(file)
 
-appliances_list = column_names_json['appliances']
+# Create the list of appliances dynamically from the model files
+appliances_list = [f.replace('.pt', '').rsplit('_', 1)[0].replace('_', ' ').title() for f in os.listdir(model_path)]
 
 def create_day_dataset_from_file():
     df = pd.read_parquet(infer_data_path)
@@ -108,7 +109,6 @@ def append_predictions(timestamps, predictions_dict):
     pred_df = pd.DataFrame({'timestamp': timestamps})
 
     for appliance, pred in predictions_dict.items():
-        print(f"Processing {appliance} - shape before reshape:", pred.shape)
         appliance_name = appliance.lower().replace(' ', '_')
 
         # Remove batch dimension if necessary
@@ -128,6 +128,16 @@ def append_predictions(timestamps, predictions_dict):
 
     # Melt and save
     pred_df = melt_dataframe(pred_df)
+
+    # Load previous data if exists
+    if os.path.exists(inferred_data_path):
+        try:
+            existing_df = pd.read_parquet(inferred_data_path)
+            pred_df = pd.concat([existing_df, pred_df], ignore_index=True)
+        except Exception as e:
+            print(f"Error loading existing file: {e}")
+            # You can choose to fail or continue with only new predictions
+
     pred_df.to_parquet(inferred_data_path, index=False)
     print(f"[{datetime.now()}] Predictions for appliances {list(predictions_dict.keys())} appended to {inferred_data_path}")
 

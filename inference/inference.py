@@ -14,14 +14,14 @@ config, config_dir = load_config()
 env = config['Settings']['environment']
 inference_timestamp = config['Inference']['inference_timestamp']
 data_path = config[env]['data_path']
-models_dir = config['Data']['models_dir']
-model_file = config['Data']['model_file']
-inferred_data_file = config['Data']['inferred_data_file']
-infer_data_file = config['Data']['daily_data_file']
-column_names_file = config['Data']['training_dataset_columns_file']
-scalers_dir = config['Data']['scalers_dir']
-input_scaler_file = config['Data']['input_scaler_file']
-target_scalers_file = config['Data']['target_scalers_file']
+models_dir = str(config['Data']['models_dir'])
+model_file = str(config['Data']['model_file'])
+inferred_data_file = str(config['Data']['inferred_data_file'])
+infer_data_file = str(config['Data']['daily_data_file'])
+column_names_file = str(config['Data']['training_dataset_columns_file'])
+scalers_dir = str(config['Data']['scalers_dir'])
+input_scaler_file = str(config['Data']['input_scaler_file'])
+target_scalers_file = str(config['Data']['target_scalers_file'])
 batch_size = int(config['Inference']['batch_size'])
 
 model_path = os.path.join(data_path, models_dir)
@@ -100,6 +100,37 @@ def melt_dataframe(df):
     return df_long
 
 
+def compute_other_column(p_df, sm_df):
+    # Ensure timestamps are datetime and sorted
+    p_df['timestamp'] = pd.to_datetime(p_df['timestamp'])
+    sm_df['timestamp'] = pd.to_datetime(sm_df['timestamp'])
+
+    p_df = p_df.sort_values('timestamp').reset_index(drop=True)
+    sm_df = sm_df.sort_values('timestamp').reset_index(drop=True)
+
+    # Sum predicted appliance power per timestamp (exclude 'timestamp' column)
+    appliance_cols = p_df.columns.difference(['timestamp'])
+    p_df['total_pred_power'] = p_df[appliance_cols].sum(axis=1)
+
+    # Sum smart meter phases to get total power per timestamp
+    phase_cols = [col for col in sm_df.columns if col.lower() in ['powerl1', 'powerl2', 'powerl3']]
+    sm_df['total_sm_power'] = sm_df[phase_cols].sum(axis=1)
+
+    # Merge on timestamp to align rows
+    merged = pd.merge(p_df, sm_df[['timestamp', 'total_sm_power']], on='timestamp', how='inner')
+
+    # Compute 'Other' = smart meter total - sum predicted appliances
+    merged['Other'] = merged['total_sm_power'] - merged['total_pred_power']
+
+    # Clip negative values to zero
+    merged['Other'] = merged['Other'].clip(lower=0)
+
+    # Optional: keep original columns + Other column, drop helper cols
+    result = merged.drop(columns=['total_pred_power', 'total_sm_power'])
+
+    return result
+
+
 def append_predictions(timestamps, predictions_dict):
     """
     timestamps: list of timestamps (len = total timesteps)
@@ -125,6 +156,10 @@ def append_predictions(timestamps, predictions_dict):
         pred_inverse = target_scaler.inverse_transform(pred_reshaped).flatten()
 
         pred_df[appliance] = pred_inverse
+
+    # Compute 'Other' column
+    sm_df = pd.read_parquet(infer_data_path)
+    pred_df = compute_other_column(pred_df, sm_df)
 
     # Melt and save
     pred_df = melt_dataframe(pred_df)

@@ -110,23 +110,3 @@ sudo apt-get install docker-compose-plugin
 ```bash
 docker compose version
 ```
-
-
-
-  inference:
-    build: inference
-    image: inference:latest
-    volumes:
-      - /home/pi/data:/app/data # Bind mount (host:container)
-      - /home/pi/config.ini:/usr/src/app/config.ini
-      - /home/pi/config_loader.py:/usr/src/app/config_loader.py
-    environment:
-      - TZ=Europe/Berlin
-    restart: always
-    network_mode: host
-    privileged: true
-  
-
-docker rm $(docker ps -a -q)
-
-docker ps -a

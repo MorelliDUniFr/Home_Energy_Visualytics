@@ -96,9 +96,9 @@ def validate_config(config):
     if env == 'development':
         training_dataset_file = config['Data']['training_dataset_file']
         training_dataset_path = os.path.join(data_path, training_dataset_file)
-        if not os.path.isfile(training_dataset_path):
-            raise FileNotFoundError(
-                f'Training dataset file "{training_dataset_file}" does not exist in data path "{data_path}"')
+        # if not os.path.isfile(training_dataset_path):
+            # raise FileNotFoundError(
+                # f'Training dataset file "{training_dataset_file}" does not exist in data path "{data_path}"')
 
     # Ensure that the MQTT broker is a valid URL
     import re

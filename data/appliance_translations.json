@@ -1,0 +1,75 @@
+{
+  "Coffee Machine": {
+    "en": "Coffee Machine",
+    "it": "Macchina da Caffè",
+    "fr": "Machine à Café",
+    "de": "Kaffeemaschine"
+  },
+  "Dryer": {
+    "en": "Dryer",
+    "it": "Asciugatrice",
+    "fr": "Sèche-linge",
+    "de": "Wäschetrockner"
+  },
+  "Freezer": {
+    "en": "Freezer",
+    "it": "Congelatore",
+    "fr": "Congélateur",
+    "de": "Gefrierschrank"
+  },
+  "Fridge": {
+    "en": "Fridge",
+    "it": "Frigorifero",
+    "fr": "Réfrigérateur",
+    "de": "Kühlschrank"
+  },
+  "Lamp": {
+    "en": "Lamp",
+    "it": "Lampada",
+    "fr": "Lampe",
+    "de": "Lampe"
+  },
+  "Laptop": {
+    "en": "Laptop",
+    "it": "Laptop",
+    "fr": "Ordinateur Portable",
+    "de": "Laptop"
+  },
+  "Microwave": {
+    "en": "Microwave",
+    "it": "Microonde",
+    "fr": "Micro-ondes",
+    "de": "Mikrowelle"
+  },
+  "PC": {
+    "en": "PC",
+    "it": "PC",
+    "fr": "PC",
+    "de": "PC"
+  },
+  "Router": {
+    "en": "Router",
+    "it": "Router",
+    "fr": "Routeur",
+    "de": "Router"
+  },
+  "Tablet": {
+    "en": "Tablet",
+    "it": "Tablet",
+    "fr": "Tablette",
+    "de": "Tablet"
+  },
+  "Washing Machine": {
+    "en": "Washing Machine",
+    "it": "Lavatrice",
+    "fr": "Lave-linge",
+    "de": "Waschmaschine"
+  },
+  "Other": {
+    "en": "Other",
+    "it": "Altro",
+    "fr": "Autre",
+    "de": "Andere"
+  }
+}
+

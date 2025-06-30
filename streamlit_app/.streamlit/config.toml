@@ -1,0 +1,6 @@
+[client]
+toolbarMode = "minimal"
+
+[server]
+fileWatcherType = "watchdog"
+maxMessageSize = 1000

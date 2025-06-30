@@ -1,0 +1,338 @@
+{
+  "page_title": {
+    "en": "Energy Consumption Dashboard",
+    "it": "Dashboard di Consumo Energetico",
+    "fr": "Tableau de Bord de la Consommation d'Énergie",
+    "de": "Energieverbrauchs-Dashboard"
+  },
+  "page_1_sidebar_title": {
+    "en": "Time Period Consumption",
+    "it": "Consumo per Periodo di Tempo",
+    "fr": "Consommation par Période",
+    "de": "Zeitabschnitt Verbrauch"
+  },
+  "select_language": {
+    "en": "Select Language",
+    "it": "Seleziona la lingua",
+    "fr": "Sélectionnez la langue",
+    "de": "Sprache auswählen"
+  },
+  "page_1_title": {
+    "en": "Energy Consumption by Time Period",
+    "it": "Consumo Energetico per Periodo di Tempo",
+    "fr": "Consommation d'Énergie par Période",
+    "de": "Energieverbrauch nach Zeitabschnitt"
+  },
+  "select_time_period": {
+    "en": "Select Time Period",
+    "it": "Seleziona il Periodo di Tempo",
+    "fr": "Sélectionnez la Période",
+    "de": "Zeitabschnitt auswählen"
+  },
+  "select_year": {
+    "en": "Select Year",
+    "it": "Seleziona l'Anno",
+    "fr": "Sélectionnez l'Année",
+    "de": "Jahr auswählen"
+  },
+  "select_month": {
+    "en": "Select Month",
+    "it": "Seleziona il Mese",
+    "fr": "Sélectionnez le Mois",
+    "de": "Monat auswählen"
+  },
+  "warning_message": {
+    "en": "No data available for the selected time period. Please select a valid one",
+    "it": "Nessun dato disponibile per il periodo selezionato. Seleziona un periodo valido",
+    "fr": "Aucune donnée disponible pour la période sélectionnée. Veuillez en sélectionner une valide",
+    "de": "Keine Daten für den ausgewählten Zeitraum verfügbar. Bitte wählen Sie einen gültigen Zeitraum"
+  },
+  "page_2_title": {
+    "en": "Energy Consumption Comparison",
+    "it": "Confronto del Consumo Energetico",
+    "fr": "Comparaison de la Consommation d'Énergie",
+    "de": "Energieverbrauchsvergleich"
+  },
+  "page_2_sidebar_title": {
+    "en": "Compare Consumption",
+    "it": "Confronta il Consumo",
+    "fr": "Comparer la Consommation",
+    "de": "Verbrauch vergleichen"
+  },
+  "select_day": {
+    "en": "Select Day",
+    "it": "Seleziona il Giorno",
+    "fr": "Sélectionnez le Jour",
+    "de": "Tag auswählen"
+  },
+  "page_3_title": {
+    "en": "Analyze Data: Overview",
+    "it": "Analizza Dati: Panoramica",
+    "fr": "Analyser les Données : Vue d'Ensemble",
+    "de": "Datenanalyse: Übersicht"
+  },
+  "page_3_sidebar_title": {
+    "en": "Data Analysis",
+    "it": "Analisi dei Dati",
+    "fr": "Analyse des Données",
+    "de": "Datenanalyse"
+  },
+  "dialog_deletion": {
+    "en": "Confirm Deletion",
+    "it": "Conferma Cancellazione",
+    "fr": "Confirmer la Suppression",
+    "de": "Löschung Bestätigen"
+  },
+  "confirm_deletion": {
+    "en": "Are you sure you want to delete the selected appliance",
+    "it": "Sei sicuro di voler eliminare l'elettrodomestico selezionato",
+    "fr": "Êtes-vous sûr de vouloir supprimer l'appareil sélectionné",
+    "de": "Sind Sie sicher, dass Sie das ausgewählte Gerät löschen möchten"
+  },
+  "confirm": {
+    "en": "Submit",
+    "it": "Conferma",
+    "fr": "Soumettre",
+    "de": "Einreichen"
+  },
+  "cancel": {
+    "en": "Cancel",
+    "it": "Annulla",
+    "fr": "Annuler",
+    "de": "Abbrechen"
+  },
+  "deleted": {
+    "en": "deleted",
+    "it": "eliminato",
+    "fr": "supprimé",
+    "de": "gelöscht"
+  },
+  "files_mismatch": {
+    "en": "The number of model files and scaler files do not match. Please ensure each model has a corresponding scaler file",
+    "it": "Il numero di file modello e file scaler non corrisponde. Assicurati che ogni modello abbia un file scaler corrispondente",
+    "fr": "Le nombre de fichiers de modèle et de fichiers d'échelle ne correspond pas. Veuillez vous assurer que chaque modèle a un fichier d'échelle correspondant",
+    "de": "Die Anzahl der Modell- und Skalierungsdateien stimmt nicht überein. Bitte stellen Sie sicher, dass jedes Modell eine entsprechende Skalierungsdatei hat"
+  },
+  "available_appliances": {
+    "en": "Available appliances: select to delete",
+    "it": "Elettrodomestici disponibili: seleziona per eliminare",
+    "fr": "Appareils disponibles : sélectionnez pour supprimer",
+    "de": "Verfügbare Geräte: zum Löschen auswählen"
+  },
+  "upload": {
+    "en": "Upload Appliance Model (.pt file) and its corresponding Scaler (.pkl file)",
+    "it": "Carica il Modello dell'Elettrodomestico (.pt file) e il suo Scaler corrispondente (.pkl file)",
+    "fr": "Télécharger le Modèle d'Appareil (.pt file) et son Scaler correspondant (.pkl file)",
+    "de": "Gerätemodell hochladen (.pt-Datei) und den entsprechenden Skalierer (.pkl-Datei)"
+  },
+  "columns_to_display": {
+    "en": "Select columns to display",
+    "it": "Seleziona le colonne da visualizzare",
+    "fr": "Sélectionnez les colonnes à afficher",
+    "de": "Spalten zur Anzeige auswählen"
+  },
+  "appliances_to_display": {
+    "en": "Select appliances to display",
+    "it": "Seleziona gli elettrodomestici da visualizzare",
+    "fr": "Sélectionnez les appareils à afficher",
+    "de": "Anzuzeigende Geräte auswählen"
+  },
+  "time_filter": {
+    "en": "Filter by time",
+    "it": "Filtra per tempo",
+    "fr": "Filtrer par temps",
+    "de": "Nach Zeit filtern"
+  },
+  "start_time": {
+    "en": "Start Time",
+    "it": "Ora di Inizio",
+    "fr": "Heure de Début",
+    "de": "Startzeit"
+  },
+  "end_time": {
+    "en": "End Time",
+    "it": "Ora di Fine",
+    "fr": "Heure de Fin",
+    "de": "Endzeit"
+  },
+  "start_date": {
+    "en": "Start Date",
+    "it": "Data di Inizio",
+    "fr": "Date de Début",
+    "de": "Startdatum"
+  },
+  "end_date": {
+    "en": "End Date",
+    "it": "Data di Fine",
+    "fr": "Date de Fin",
+    "de": "Enddatum"
+  },
+  "appliance_distribution": {
+    "en": "Appliance Distribution",
+    "it": "Distribuzione degli Elettrodomestici",
+    "fr": "Distribution des Appareils",
+    "de": "Geräteverteilung"
+  },
+  "total_consumption": {
+    "en": "Total Consumption",
+    "it": "Consumo Totale",
+    "fr": "Consommation Totale",
+    "de": "Gesamtverbrauch"
+  },
+  "display_mode": {
+    "en": "Display Mode",
+    "it": "Modalità di Visualizzazione",
+    "fr": "Mode d'Affichage",
+    "de": "Anzeigemodus"
+  },
+  "bar_chart": {
+    "en": "Bar Chart",
+    "it": "Grafico a Barre",
+    "fr": "Graphique à Barres",
+    "de": "Balkendiagramm"
+  },
+  "pie_chart": {
+    "en": "Pie Chart",
+    "it": "Grafico a Torta",
+    "fr": "Graphique en Secteurs",
+    "de": "Kreisdiagramm"
+  },
+  "individual": {
+    "en": "Individual",
+    "it": "Individuale",
+    "fr": "Individuel",
+    "de": "Einzeln"
+  },
+  "cumulative": {
+    "en": "Cumulative",
+    "it": "Cumulativo",
+    "fr": "Cumulatif",
+    "de": "Kumulativ"
+  },
+  "time": {
+    "en": "Time",
+    "it": "Tempo",
+    "fr": "Temps",
+    "de": "Zeit"
+  },
+  "appliances": {
+    "en": "Appliances",
+    "it": "Elettrodomestici",
+    "fr": "Appareils",
+    "de": "Geräte"
+  },
+  "appliance": {
+    "en": "Appliance",
+    "it": "Elettrodomestico",
+    "fr": "Appareil",
+    "de": "Gerät"
+  },
+  "power": {
+    "en": "Power",
+    "it": "Potenza",
+    "fr": "Puissance",
+    "de": "Leistung"
+  },
+  "select_starting_day": {
+    "en": "Select Starting Day",
+    "it": "Seleziona il Giorno di Inizio",
+    "fr": "Sélectionnez le Jour de Début",
+    "de": "Starttag auswählen"
+  },
+  "select_starting_month": {
+    "en": "Select Starting Month",
+    "it": "Seleziona il Mese di Inizio",
+    "fr": "Sélectionnez le Mois de Début",
+    "de": "Startmonat auswählen"
+  },
+  "day": {
+    "en": "Day",
+    "it": "Giorno",
+    "fr": "Jour",
+    "de": "Tag"
+  },
+  "week": {
+    "en": "Week",
+    "it": "Settimana",
+    "fr": "Semaine",
+    "de": "Woche"
+  },
+  "month": {
+      "en": "Month",
+      "it": "Mese",
+      "fr": "Mois",
+      "de": "Monat"
+  },
+  "year": {
+      "en": "Year",
+      "it": "Anno",
+      "fr": "Année",
+      "de": "Jahr"
+  },
+  "actual_consumption": {
+    "en": "Actual Consumption",
+    "it": "Consumo Reale",
+    "fr": "Consommation Réelle",
+    "de": "Tatsächlicher Verbrauch"
+  },
+  "relative_consumption": {
+    "en": "Relative Consumption",
+    "it": "Consumo Relativo",
+    "fr": "Consommation Relative",
+    "de": "Relativer Verbrauch"
+  },
+  "energy_consumption": {
+    "en": "Energy Consumption",
+    "it": "Consumo Energetico",
+    "fr": "Consommation d'Énergie",
+    "de": "Energieverbrauch"
+  },
+  "appliance_usage_period": {
+    "en": "Appliance Usage betwween",
+    "it": "Utilizzo dell'Elettrodomestico tra",
+    "fr": "Utilisation de l'Appareil entre",
+    "de": "Geräteverwendung zwischen"
+  },
+  "and": {
+    "en": "and",
+    "it": "e",
+    "fr": "et",
+    "de": "und"
+  },
+  "warning_same_dates": {
+    "en": "The selected dates are the same. Please select different dates to compare",
+    "it": "Le date selezionate sono le stesse. Seleziona date diverse per confrontare",
+    "fr": "Les dates sélectionnées sont les mêmes. Veuillez sélectionner des dates différentes pour comparer",
+    "de": "Die ausgewählten Daten sind gleich. Bitte wählen Sie unterschiedliche Daten zum Vergleichen"
+  },
+  "model_files": {
+    "en": "Model Files",
+    "it": "File Modello",
+    "fr": "Fichiers de Modèle",
+    "de": "Modell-Dateien"
+  },
+  "scaler_files": {
+      "en": "Scaler Files",
+      "it": "File Scaler",
+      "fr": "Fichiers d'Échelle",
+      "de": "Skalierungsdateien"
+  },
+  "value": {
+    "en": "Value",
+    "it": "Valore",
+    "fr": "Valeur",
+    "de": "Wert"
+  },
+  "minute": {
+    "en": "Minute",
+    "it": "Minuto",
+    "fr": "Minute",
+    "de": "Minute"
+  },
+  "hour": {
+    "en": "Hour",
+    "it": "Ora",
+    "fr": "Heure",
+    "de": "Stunde"
+  }
+}

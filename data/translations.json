@@ -334,5 +334,11 @@
     "it": "Ora",
     "fr": "Heure",
     "de": "Stunde"
+  },
+  "energy": {
+    "en": "Energy",
+    "it": "Energia",
+    "fr": "Énergie",
+    "de": "Energie"
   }
 }

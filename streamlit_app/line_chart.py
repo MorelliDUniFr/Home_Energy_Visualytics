@@ -12,19 +12,18 @@ def create_line_chart(f_data, t_filter):
 
     f_data['timestamp'] = pd.to_datetime(f_data['timestamp'])
 
+    f_data['energy_Wh'] = f_data['value'] * (10 / 3600) # added
     floor_period = time_filter[t_filter]['floor_period']
     f_data['agg_time'] = f_data['timestamp'].dt.floor(floor_period)
 
     f_data = (
         f_data
         .groupby(['agg_time', 'appliance'], as_index=False)
-        .agg({'value': 'mean'})
+        .agg({'energy_Wh': 'sum'})
     )
+    f_data = f_data.rename(columns={'energy_Wh': 'value'}) # added
 
-    f_data['formatted_value'] = f_data['value'].apply(format_value, args=('W',))
-
-    # Compute max y value
-    max_value = f_data['value'].max()
+    f_data['formatted_value'] = f_data['value'].apply(format_value, args=('Wh',))
 
     f_data['translated_appliance'] = f_data['appliance'].apply(translate_appliance_name)
 
@@ -32,16 +31,17 @@ def create_line_chart(f_data, t_filter):
         'individual': t('individual'),
         'cumulative': t('cumulative')
     }
-    translated_labels = list(view_mode_options.values())
-    default_index = translated_labels.index(view_mode_options[st.session_state.line_type])
 
-    # View mode: Absolute or Relative
-    view_mode = st.radio(f"{t('display_mode')}:", translated_labels, horizontal=True, index=default_index)
-    # Map back selected label to internal key and save
-    for key, val in view_mode_options.items():
-        if val == view_mode:
-            st.session_state.line_type = key
-            break
+    # Ensure default is set
+    st.session_state.line_type = st.session_state.line_type or 'individual'
+
+    st.radio(
+        f"{t('display_mode')}:",
+        options=list(view_mode_options.keys()),  # internal keys: ['individual', 'cumulative']
+        format_func=lambda x: view_mode_options[x],  # show translated label
+        horizontal=True,
+        key='line_type'  # stored directly in session_state
+    )
 
     if st.session_state.line_type == 'cumulative':
         legend_order = appliance_order[::-1]
@@ -86,7 +86,7 @@ def create_line_chart(f_data, t_filter):
             tickangle=0
         ),
         yaxis=dict(
-            title=f"{t('power')} [W]",
+            title=f"{t('energy')} [Wh]",
             showgrid=True,
             gridcolor="gray",
             gridwidth=1,
@@ -114,7 +114,6 @@ def create_line_chart(f_data, t_filter):
     )
 
     fig.update_xaxes(rangeslider_visible=True)
-    # fig.update_yaxes(type='linear', range=[0, max_value])
     fig.update_yaxes(type='linear', autorange=True)
 
     return fig

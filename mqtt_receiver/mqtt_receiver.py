@@ -7,7 +7,7 @@ import pyarrow.parquet as pq
 import pandas as pd
 from datetime import datetime, timedelta
 import threading
-from config_loader import load_config
+from config_loader import load_config, logger
 
 config, config_dir = load_config()
 
@@ -29,7 +29,7 @@ RESET_TIMESTAMP = reset_time.strftime("%H:%M")
 # Ensure data directory exists
 os.makedirs(data_path, exist_ok=True)
 
-# Columns info
+# Useless columns to drop from daily data file
 columns_to_drop = ['SMid', 'Po', 'P1o', 'P2o', 'P3o', 'Ei', 'Ei1', 'Ei2', 'Eo', 'Eo1', 'Eo2']
 
 buffer = []  # Buffer for incoming data batches
@@ -56,7 +56,7 @@ def flush_buffer_to_daily_file():
     batch_df_filtered = batch_df.drop(columns=columns_to_drop, errors='ignore')
     append_to_parquet(batch_df_filtered, os.path.join(data_path, daily_data_file))
     buffer.clear()
-    print(f"Flushed {len(batch_df)} rows from buffer to daily file.")
+    logger.info(f"Flushed {len(batch_df)} rows from buffer to daily file.")
 
 
 def append_daily_to_whole():
@@ -65,7 +65,7 @@ def append_daily_to_whole():
     whole_path = os.path.join(data_path, whole_data_file)
 
     if not os.path.exists(daily_path):
-        print("Daily file does not exist; nothing to append.")
+        logger.info("Daily file does not exist; nothing to append.")
         return
 
     try:
@@ -78,21 +78,21 @@ def append_daily_to_whole():
             combined_table = daily_table
 
         pq.write_table(combined_table, whole_path)
-        print("Appended daily file to whole file successfully.")
+        logger.info("Appended daily file to whole file successfully.")
 
     except Exception as e:
-        print(f"Error appending daily file to whole file: {e}")
+        logger.error(f"Error appending daily file to whole file: {e}")
 
 
 def check_and_write_daily_data():
     global already_written_today
-    print("Starting time-checking thread...")
+    logger.info("Starting time-checking thread...")
     while True:
         now = datetime.now()
         current_time = now.strftime("%H:%M")
 
         if current_time == transfer_timestamp and not already_written_today:
-            print(f"{transfer_timestamp} reached — appending daily file to whole file.")
+            logger.info(f"{transfer_timestamp} reached — appending daily file to whole file.")
             flush_buffer_to_daily_file()  # flush any remaining data before appending
             append_daily_to_whole()
             already_written_today = True
@@ -104,9 +104,9 @@ def check_and_write_daily_data():
 
 
 def on_connect(client, userdata, flags, rc):
-    print("Connected with result code " + str(rc))
+    logger.info("Connected with result code " + str(rc))
     client.subscribe(topic)
-    print(f"Subscribed to topic: {topic}")
+    logger.info(f"Connected with result code " + str(rc))
 
 
 def on_message(client, userdata, msg):
@@ -125,21 +125,21 @@ def on_message(client, userdata, msg):
             flush_buffer_to_daily_file()
 
     except json.JSONDecodeError as e:
-        print(f"Error decoding JSON: {e}")
+        logger.error(f"Error decoding JSON: {e}")
 
 
 # Initialize MQTT client
-print("Initializing MQTT client...")
+logger.info("Initializing MQTT client...")
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
 
 client.connect(broker, port, 0)
-print(f"Connected to broker {broker} on port {port}")
+logger.info(f"Connected to broker {broker} on port {port}")
 
 client.loop_start()
 
-print("Transfer timestamp:", transfer_timestamp)
+logger.info(f"Transfer timestamp: {transfer_timestamp}")
 threading.Thread(target=check_and_write_daily_data, daemon=True).start()
 
 while True:

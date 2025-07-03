@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from datetime import datetime
 import time as time_module
 import os
-from config_loader import load_config
+from config_loader import load_config, logger
 from joblib import load
 import json
 
@@ -41,27 +41,39 @@ with open(os.path.join(data_path, column_names_file), 'r') as file:
 # Create the list of appliances dynamically from the model files
 appliances_list = [f.replace('.pt', '').rsplit('_', 1)[0].replace('_', ' ').title() for f in os.listdir(model_path)]
 
-def create_day_dataset_from_file():
-    df = pd.read_parquet(infer_data_path)
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
+def prepare_inference_input(filename):
+    df = pd.read_parquet(filename)
 
-    timestamps = df['timestamp'].reset_index(drop=True)  # Keep timestamps for later
-    df = df.drop(columns=['timestamp'])
+    # Drop unnecessary columns
+    drop_cols = ['SMid', 'Pi', 'Po', 'P1o', 'P2o', 'P3o', 'Ei', 'Ei1', 'Ei2', 'Eo', 'Eo1', 'Eo2']
+    df = df.drop(columns=[col for col in drop_cols if col in df.columns], errors='ignore')
 
-    # Apply normalization
-    X_day = input_scaler.transform(df)
-    return X_day, timestamps
+    # Rename it to match training schema
+    rename_map = {
+        'P1i': 'powerl1', 'P2i': 'powerl2', 'P3i': 'powerl3',
+        'I1': 'currentl1', 'I2': 'currentl2', 'I3': 'currentl3',
+        'V1': 'voltagel1', 'V2': 'voltagel2', 'V3': 'voltagel3',
+    }
+    df = df.rename(columns=rename_map)
 
-def run_inference(X_day, appliance):
-    appliance_name = appliance.lower().replace(' ', '_')
+    # Extract and drop timestamp
+    ts = df.pop('timestamp').reset_index(drop=True)
+
+    df = df[list(rename_map.values())]
+
+    # Normalize input
+    X = input_scaler.transform(df)
+    return X, ts
+
+def run_inference(day_input, app):
+    appliance_name = app.lower().replace(' ', '_')
     model = torch.jit.load(os.path.join(model_path, appliance_name + model_file))
     model.eval()
 
-    if len(X_day.shape) == 2:
-        X_day = np.expand_dims(X_day, axis=0)
+    day_input = np.expand_dims(day_input, axis=0)
 
-    X_day_tensor = torch.tensor(X_day, dtype=torch.float32).to(device)
-    day_dataset = TensorDataset(X_day_tensor)
+    day_input_tensor = torch.tensor(day_input, dtype=torch.float32).to(device)
+    day_dataset = TensorDataset(day_input_tensor)
     day_loader = DataLoader(day_dataset, batch_size=batch_size, shuffle=False)
 
     predictions_all = []
@@ -76,8 +88,7 @@ def run_inference(X_day, appliance):
             # Convert to NumPy after clamping
             predictions_all.append(batch_predictions.cpu().numpy())
 
-    predictions_np = np.concatenate(predictions_all, axis=0)
-    return predictions_np
+    return np.concatenate(predictions_all, axis=0)
 
 
 def melt_dataframe(df):
@@ -94,10 +105,8 @@ def melt_dataframe(df):
     df_long['hour'] = df_long['timestamp'].dt.hour
     df_long['month'] = df_long['timestamp'].dt.to_period('M')
 
-    # Sort by timestamp (and optionally by appliance if you want consistent order)
-    df_long = df_long.sort_values(by=['timestamp'])
-
-    return df_long
+    # Sort by timestamp
+    return df_long.sort_values(by=['timestamp'])
 
 
 def compute_other_column(p_df, sm_df):
@@ -125,30 +134,23 @@ def compute_other_column(p_df, sm_df):
     # Clip negative values to zero
     merged['Other'] = merged['Other'].clip(lower=0)
 
-    # Optional: keep original columns + Other column, drop helper cols
     result = merged.drop(columns=['total_pred_power', 'total_sm_power'])
 
     return result
 
 
-def append_predictions(timestamps, predictions_dict):
+def append_predictions(ts, predictions_dict):
     """
     timestamps: list of timestamps (len = total timesteps)
-    predictions_dict: dict of {appliance_name: np.ndarray of shape (total_timesteps,)}
+    predictions_dict: dict of {appliance_name: np.ndarray of shape (total_timesteps ,)}
                       or (1, seq_len, 1) / (batch, seq_len, 1)
     """
-    pred_df = pd.DataFrame({'timestamp': timestamps})
+    pred_df = pd.DataFrame({'timestamp': ts})
 
-    for appliance, pred in predictions_dict.items():
-        appliance_name = appliance.lower().replace(' ', '_')
+    for app, pred in predictions_dict.items():
+        appliance_name = app.lower().replace(' ', '_')
 
-        # Remove batch dimension if necessary
-        if pred.ndim == 3 and pred.shape[0] == 1:
-            pred = pred[0]  # shape: (seq_len, 1)
-        if pred.ndim == 2 and pred.shape[1] == 1:
-            pred = pred[:, 0]  # shape: (seq_len,)
-        elif pred.ndim == 3:
-            pred = pred.reshape(-1, pred.shape[2])[:, 0]  # flatten and squeeze
+        pred = np.squeeze(pred)
 
         # Inverse scale
         target_scaler = load(os.path.join(target_scalers_path, appliance_name + target_scalers_file))
@@ -169,42 +171,39 @@ def append_predictions(timestamps, predictions_dict):
         try:
             existing_df = pd.read_parquet(inferred_data_path)
             pred_df = pd.concat([existing_df, pred_df], ignore_index=True)
-        except Exception as e:
-            print(f"Error loading existing file: {e}")
-            # You can choose to fail or continue with only new predictions
+        except Exception as ex:
+            logger.error(f"Error loading existing file: {ex}")
 
     pred_df.to_parquet(inferred_data_path, index=False)
-    print(f"[{datetime.now()}] Predictions for appliances {list(predictions_dict.keys())} appended to {inferred_data_path}")
+    logger.info(f"[{datetime.now()}] Predictions for appliances {list(predictions_dict.keys())} appended to {inferred_data_path}")
 
 
 def time_matches(target_time_str):
-    now = datetime.now().time()
-    target = datetime.strptime(target_time_str, "%H:%M").time()
-    return now.hour == target.hour and now.minute == target.minute
+    return datetime.now().strftime("%H:%M") == target_time_str
 
 
 if __name__ == "__main__":
     already_run_today = False
-    print(f"Inference service started — waiting for {inference_timestamp} each day...")
+    logger.info(f"Inference service started — waiting for {inference_timestamp} each day...")
 
     while True:
         now = datetime.now()
 
         if time_matches(inference_timestamp):
             if not already_run_today:
-                print(f"[{now}] Time matched — running inference...")
+                logger.info(f"[{now}] Time matched — running inference...")
                 try:
-                    X_day, timestamps = create_day_dataset_from_file()
+                    input_data, timestamps = prepare_inference_input(infer_data_path)
                     predictions = {}
                     for appliance in appliances_list:
-                        predictions_np = run_inference(X_day, appliance=appliance)
+                        predictions_np = run_inference(input_data, app=appliance)
                         predictions[appliance] = predictions_np
 
                     append_predictions(timestamps, predictions)
 
                     already_run_today = True
                 except Exception as e:
-                    print(f"[{now}] Error during inference: {e}")
+                    logger.error(f"[{now}] Error during inference: {e}")
         else:
             already_run_today = False  # Reset the flag after target time passes
 

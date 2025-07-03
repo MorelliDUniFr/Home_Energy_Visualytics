@@ -5,6 +5,7 @@ from horizontal_bar_chart import plot_horizontal_bar_chart
 from translations import t
 from babel.dates import format_date
 from datetime import datetime
+from session_utils import store_value, load_value
 
 st.title(t('page_1_title'))
 
@@ -12,78 +13,94 @@ c1, c2, c3, _ = st.columns([1.33, 1.33, 1.33, 6])
 
 with st.container():
     with c1:
-        with c1:
-            # Translated time period options
-            translated_labels = {t(key.lower()): key for key in time_filter}
-            current_label = t(st.session_state.time_period.lower())
-            selected_label = st.selectbox(t('select_time_period'), options=list(translated_labels.keys()),
-                                          index=list(translated_labels).index(current_label))
-            st.session_state.time_period = translated_labels[selected_label]
+        load_value("time_period", default='Day')
+        translated_labels = {key: t(key.lower()) for key in time_filter}
+        label_options = list(translated_labels.keys())
+        selected_label = st.selectbox(t('select_time_period'), on_change=store_value, args=('time_period',), options=label_options, format_func=lambda x: translated_labels[x], key='_time_period')
 
-        time_period = st.session_state.time_period
         available_years = get_available_years(data)
 
+    if '_time_period' in st.session_state:
+        st.session_state['time_period'] = st.session_state['_time_period']
+
     # === Day/Week Selection ===
-    if time_period in ['Day', 'Week']:
+    if st.session_state.time_period in ['Day', 'Week']:
         with c2:
-            st.session_state.selected_date_1 = st.session_state.selected_date_1 or time_filter[time_period]['value']
-            selected_date = st.date_input(
-                t(time_filter[time_period]['input_string']),
+            # load_value('selected_date_1', default=time_filter[st.session_state.time_period]['value'])
+            max_date = time_filter[st.session_state.time_period]['max_value']
+
+            if 'selected_date_1' in st.session_state and st.session_state.selected_date_1 is not None:
+                if st.session_state.selected_date_1 > max_date:
+                    st.session_state.selected_date_1 = max_date
+
+            load_value('selected_date_1', default=max_date)
+
+            st.date_input(
+                t(time_filter[st.session_state.time_period]['input_string']),
                 min_value=data['date'].min(),
-                max_value=time_filter[time_period]['max_value'],
-                value=st.session_state.selected_date_1,
-                format=DATE_FORMAT
+                max_value=time_filter[st.session_state.time_period]['max_value'],
+                format=DATE_FORMAT,
+                key='_selected_date_1',
+                on_change=store_value,
+                args=('selected_date_1',)
             )
-            st.session_state.selected_date_1 = selected_date
-            st.session_state.selected_year_1 = selected_date.year
-            st.session_state.selected_month_1 = selected_date.strftime('%B')
+
+        if '_selected_date_1' in st.session_state:
+            st.session_state.selected_date_1 = st.session_state['_selected_date_1']
+            st.session_state.selected_year_1 = st.session_state.selected_date_1.year
+            st.session_state.selected_month_1 = st.session_state.selected_date_1.strftime('%B')
 
     # === Year Selection ===
-    elif time_period == 'Year':
+    elif st.session_state.time_period == 'Year':
         with c2:
-            index = 0 if len(available_years) == 1 else len(available_years) - 2
-            st.session_state.selected_year_1 = st.session_state.selected_year_1 or available_years[index]
-            selected_year = st.selectbox(t('select_year'), available_years, index=available_years.index(st.session_state.selected_year_1))
-            st.session_state.selected_year_1 = selected_year
-            selected_date = pd.to_datetime(f'{selected_year}-01-01').date()
+            load_value('selected_year_1',
+                       default=available_years[0] if len(available_years) == 1 else available_years[-2])
+
+            st.selectbox(t('select_year'), available_years, key='_selected_year_1',
+                                         on_change=store_value, args=('selected_year_1',))
+
+            if '_selected_year_1' in st.session_state:
+                st.session_state.selected_year_1 = st.session_state['_selected_year_1']
+                # st.session_state.selected_date_1 = pd.to_datetime(f"{st.session_state.selected_year_1}-01-01").date()
 
     # === Month Selection ===
-    elif time_period == 'Month':
-        index = 0 if len(available_years) == 1 else len(available_years) - 2
-        st.session_state.selected_year_1 = st.session_state.selected_year_1 or available_years[index]
+    elif st.session_state.time_period == 'Month':
+        load_value('selected_year_1',
+                   default=available_years[0] if len(available_years) == 1 else available_years[-2])
 
         with c3:
-            selected_year = st.selectbox(
-                t('select_year'),
-                available_years,
-                index=available_years.index(st.session_state.selected_year_1)
-            )
-            st.session_state.selected_year_1 = selected_year
+            st.selectbox(t('select_year'), available_years, key='_selected_year_1',
+                                         on_change=store_value, args=('selected_year_1',))
 
-        available_months = get_available_months_for_year(data, selected_year)
-        index_sel_month = 0 if len(available_months) == 1 else len(available_months) - 2
+            if '_selected_year_1' in st.session_state:
+                st.session_state.selected_year_1 = st.session_state['_selected_year_1']
+                # st.session_state.selected_date_1 = pd.to_datetime(f"{st.session_state.selected_year_1}-01-01").date()
+
+        available_months = get_available_months_for_year(data, st.session_state.selected_year_1)
 
         month_label_map = {
-            format_date(datetime.strptime(m, '%B'), format='LLLL', locale=st.session_state.lang): m
+            m: format_date(datetime.strptime(m, '%B'), format='LLLL', locale=st.session_state.lang)
             for m in available_months
         }
-
-        st.session_state.selected_month_1 = st.session_state.selected_month_1 or list(month_label_map.values())[
-            index_sel_month]
+        load_value('selected_month_1',
+                   default=available_months[0 if len(available_months) == 1 else len(available_months) - 2])
 
         with c2:
-            selected_label = st.selectbox(
+            st.selectbox(
                 t("select_month"),
-                list(month_label_map.keys()),
-                index=list(month_label_map.values()).index(st.session_state.selected_month_1)
+                options=available_months,
+                format_func=lambda x: month_label_map[x],
+                key='_selected_month_1',
+                on_change=store_value,
+                args=('selected_month_1',)
             )
-            selected_month = month_label_map[selected_label]
-            st.session_state.selected_month_1 = selected_month
+            if '_selected_month_1' in st.session_state:
+                st.session_state.selected_month_1 = st.session_state['_selected_month_1']
 
-        selected_date = pd.to_datetime(f'{selected_year}-{selected_month}-01').date()
+        st.session_state.selected_date_1 = pd.to_datetime(f'{st.session_state.selected_year_1}-{st.session_state.selected_month_1}-01').date()
 
     # Filter data once after time selection
-    filtered_data = filter_data_by_time(data, time_period, selected_date)
+    filtered_data = filter_data_by_time(data, st.session_state.time_period, st.session_state.selected_date_1)
 
 if filtered_data.empty:
     st.warning(body=t('warning_message'), icon='ℹ️')
@@ -95,27 +112,28 @@ with c11:
         "bar_chart": t('bar_chart'),
         "pie_chart": t('pie_chart')
     }
-    translated_labels = list(chart_options.values())
 
-    # Initialize if missing or invalid
-    if 'chart_type' not in st.session_state or st.session_state.chart_type not in chart_options:
-        st.session_state.chart_type = 'bar_chart'
+    # Set default if not initialized yet
+    st.session_state.chart_type = st.session_state.chart_type or 'bar_chart'
 
-    default_index = translated_labels.index(chart_options[st.session_state.chart_type])
+    # Get the translated label for display
+    def get_label(chart_key):
+        return chart_options[chart_key]
 
-    selected_label = st.radio(f'{t("display_mode")}:', translated_labels, horizontal=True, index=default_index)
+    st.radio(
+        label=f'{t("display_mode")}:',
+        options=list(chart_options.keys()),  # ["bar_chart", "pie_chart"]
+        format_func=get_label,               # Show translated version
+        horizontal=True,
+        key='chart_type'                     # Tie widget directly to session_state.chart_type
+    )
 
-    # Map back from translated label to internal key
-    for key, val in chart_options.items():
-        if val == selected_label:
-            st.session_state.chart_type = key
-            break
-
+    # Now just use selected_chart or st.session_state.chart_type
     if st.session_state.chart_type == 'bar_chart':
         plot_horizontal_bar_chart(filtered_data, colors=appliance_colors)
     else:
         plot_pie_chart(filtered_data, c11, 'pie_chart', colors=appliance_colors)
 
 with c12:
-    fig = create_line_chart(filtered_data, t_filter=time_period)
+    fig = create_line_chart(filtered_data, t_filter=st.session_state.time_period)
     st.plotly_chart(fig, use_container_width=True)

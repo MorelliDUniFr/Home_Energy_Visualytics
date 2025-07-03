@@ -1,16 +1,10 @@
 import streamlit as st
 from translations import t, languages
 
+
 # --- Set default session state values ---
 default_state = {
     "lang": "en",
-    "time_period": "Day",
-    "selected_date_1": None,
-    "selected_month_1": None,
-    "selected_year_1": None,
-    "selected_date_2": None,
-    "selected_month_2": None,
-    "selected_year_2": None,
     "v_bar_chart": 'actual',
     "chart_type": 'bar_chart',
     "line_type": 'individual',
@@ -18,13 +12,16 @@ default_state = {
     "selected_appliances": [],
 }
 
-
 for key, value in default_state.items():
-    st.session_state.setdefault(key, value)
+    if key not in st.session_state:
+        st.session_state[key] = value
+
 
 # --- Define pages ---
 pg = st.navigation([
     st.Page('01_time_period_consumption.py', title=t('page_1_sidebar_title')),
+    st.Page('02_compare_with_previous_period.py', title=t('page_2_sidebar_title')),
+    st.Page('03_analyze_data.py', title=t('page_3_sidebar_title')),
 ])
 
 # --- Page config ---
@@ -33,7 +30,18 @@ st.set_page_config(
     layout='wide',
 )
 
+# --- Sidebar language selector ---
+with st.sidebar:
+    selected_lang = st.selectbox(
+        label="🌐 " + t("select_language"),
+        options=list(languages.keys()),
+        format_func=lambda code: languages[code],
+        index=list(languages).index(st.session_state.lang),
+    )
 
+    if selected_lang != st.session_state.lang:
+        st.session_state.lang = selected_lang
+        st.rerun()
 
 # --- Run selected page ---
 pg.run()

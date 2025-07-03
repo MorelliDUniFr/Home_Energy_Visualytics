@@ -1,181 +1,157 @@
 from utils import *
-import streamlit as st
 from pie_chart import plot_pie_chart
-from percentage_bar_chart import plot_percentage_bar_chart
+from line_chart import create_line_chart
+from horizontal_bar_chart import plot_horizontal_bar_chart
 from translations import t
 from babel.dates import format_date
-from datetime import datetime
+from datetime import datetime, date
 from session_utils import store_value, load_value
 
-st.title(t('page_2_title'))
+st.title(t('page_1_title'))
 
-c1, _ = st.columns([2, 8])
-c11, c12 = st.columns([1, 1], border=True)
+c1, c2, c3, _ = st.columns([1.33, 1.33, 1.33, 6])
 
 with st.container():
     with c1:
         load_value("time_period", default='Day')
-        if st.session_state.time_period == 'Week':
-            st.session_state['_time_period'] = 'Day'
-            st.session_state['time_period'] = 'Day'
-
-        excluded_option = "Week"
-        filtered_time_options = [key for key in time_filter.keys() if key != excluded_option]
-
-        translated_time_options = {
-            key: t(key.lower()) for key in filtered_time_options
-        }
-
-        # Selectbox showing translated labels, storing canonical internal keys
+        translated_labels = {key: t(key.lower()) for key in time_filter}
+        label_options = list(translated_labels.keys())
         selected_label = st.selectbox(
-            t("select_time_period"),
-            options=filtered_time_options,  # internal keys like "Day", "Month"
-            format_func=lambda x: translated_time_options[x],  # show translated label
+            t('select_time_period'),
+            options=label_options,
+            format_func=lambda x: translated_labels[x],
             key='_time_period',
             on_change=store_value,
             args=('time_period',)
         )
 
+        # Use your partition-aware function here:
+        available_years = get_available_years(inferred_dataset_path)
+
     if '_time_period' in st.session_state:
         st.session_state['time_period'] = st.session_state['_time_period']
 
-def select_and_filter_data(side_suffix: str, container_col):
-    selected_date_key = f'selected_date{side_suffix}'
-    selected_year_key = f'selected_year{side_suffix}'
-    selected_month_key = f'selected_month{side_suffix}'
+    # === Day or Week Selection ===
+    if st.session_state.time_period in ['Day', 'Week']:
+        with c2:
+            max_date = time_filter[st.session_state.time_period]['max_value']
 
-    default_dates = {
-        '_1': date_ranges.get('another_yesterday', data['date'].min()),
-        '_2': date_ranges.get('yesterday', data['date'].min()),
+            load_value('selected_date_1', default=max_date)
+
+            st.date_input(
+                t(time_filter[st.session_state.time_period]['input_string']),
+                min_value=date_ranges['another_yesterday'],
+                max_value=max_date,
+                format=DATE_FORMAT,
+                key='_selected_date_1',
+                on_change=store_value,
+                args=('selected_date_1',)
+            )
+
+        if '_selected_date_1' in st.session_state:
+            st.session_state.selected_date_1 = st.session_state['_selected_date_1']
+            st.session_state.selected_year_1 = st.session_state.selected_date_1.year
+            st.session_state.selected_month_1 = st.session_state.selected_date_1.strftime('%B')
+
+    # === Year Selection ===
+    elif st.session_state.time_period == 'Year':
+        with c2:
+            load_value('selected_year_1',
+                       default=available_years[0] if len(available_years) == 1 else available_years[-2])
+
+            st.selectbox(
+                t('select_year'),
+                available_years,
+                key='_selected_year_1',
+                on_change=store_value,
+                args=('selected_year_1',)
+            )
+
+            if '_selected_year_1' in st.session_state:
+                st.session_state.selected_year_1 = st.session_state['_selected_year_1']
+
+    # === Month Selection ===
+    elif st.session_state.time_period == 'Month':
+        load_value('selected_year_1',
+                   default=available_years[0] if len(available_years) == 1 else available_years[-2])
+
+        with c3:
+            st.selectbox(
+                t('select_year'),
+                available_years,
+                key='_selected_year_1',
+                on_change=store_value,
+                args=('selected_year_1',)
+            )
+
+            if '_selected_year_1' in st.session_state:
+                st.session_state.selected_year_1 = st.session_state['_selected_year_1']
+
+        # Partition-aware months retrieval:
+        available_months = get_available_months_for_year(inferred_dataset_path, st.session_state.selected_year_1)
+
+        month_label_map = {
+            m: format_date(datetime.strptime(m, '%B'), format='LLLL', locale=st.session_state.lang)
+            for m in available_months
+        }
+
+        load_value('selected_month_1',
+                   default=available_months[0 if len(available_months) == 1 else len(available_months) - 2])
+
+        with c2:
+            st.selectbox(
+                t("select_month"),
+                options=available_months,
+                format_func=lambda x: month_label_map[x],
+                key='_selected_month_1',
+                on_change=store_value,
+                args=('selected_month_1',)
+            )
+
+            if '_selected_month_1' in st.session_state:
+                st.session_state.selected_month_1 = st.session_state['_selected_month_1']
+
+        st.session_state.selected_date_1 = pd.to_datetime(
+            f'{st.session_state.selected_year_1}-{st.session_state.selected_month_1}-01'
+        ).date()
+
+# Use partition-aware data loading:
+filtered_date_1, filtered_data = load_and_filter_data_by_time(
+    inferred_dataset_path,
+    st.session_state.time_period,
+    '_1'
+)
+
+if filtered_data.empty:
+    st.warning(body=t('warning_message'), icon='ℹ️')
+    st.stop()
+
+c11, c12 = st.columns([4, 6], border=True)
+
+with c11:
+    chart_options = {
+        "bar_chart": t('bar_chart'),
+        "pie_chart": t('pie_chart')
     }
 
-    with container_col:
-        if st.session_state.time_period == "Day":
-            with st.columns([1, 1, 1], gap="small")[1]:
-                # Load the persistent value into the widget temporary key (_selected_date_key)
-                temp_key = f"_{selected_date_key}"
-                if selected_date_key in st.session_state:
-                    st.session_state[temp_key] = st.session_state[selected_date_key]
-                else:
-                    st.session_state[temp_key] = default_dates[side_suffix]
+    st.session_state.chart_type = st.session_state.chart_type or 'bar_chart'
 
-                # Create the date input widget with the temp key and on_change handler to store value persistently
-                selected_date = st.date_input(
-                    t('select_day'),
-                    min_value=data['date'].min(),
-                    max_value=date_ranges['yesterday'],
-                    value=st.session_state[temp_key],
-                    format=DATE_FORMAT,
-                    key=temp_key,
-                    on_change=lambda k=selected_date_key, tk=temp_key: st.session_state.update(
-                        {k: st.session_state[tk]})
-                )
+    def get_label(chart_key):
+        return chart_options[chart_key]
 
-                # Now you can use the persistent selected date key safely
-                filtered_data = filter_data_by_time(data, "Day", st.session_state[selected_date_key])
+    st.radio(
+        label=f'{t("display_mode")}:',
+        options=list(chart_options.keys()),
+        format_func=get_label,
+        horizontal=True,
+        key='chart_type'
+    )
 
-        elif st.session_state.time_period == "Month":
-            available_years = get_available_years(data)
-            index_sel_year, index_sel_month = find_sel_indexes(available_years, st.session_state.get(selected_year_key))
-
-            _, col_month, col_year, _ = st.columns([1, 1, 1, 1], gap="small")
-
-            with col_year:
-                if st.session_state.get(selected_year_key) is None:
-                    st.session_state[selected_year_key] = available_years[index_sel_year]
-
-                selected_year = st.selectbox(
-                    t('select_year'),
-                    available_years,
-                    index=available_years.index(st.session_state[selected_year_key]),
-                    key=f"select_box_year{side_suffix}"
-                )
-                st.session_state[selected_year_key] = selected_year
-
-                available_months = get_available_months_for_year(data, selected_year)
-                index_sel_month = 0 if len(available_months) == 1 else len(available_months) - 2
-
-            with col_month:
-                translated_month_map = {
-                    format_date(datetime.strptime(m, '%B'), format='LLLL', locale=st.session_state.lang): m
-                    for m in available_months
-                }
-
-                temp_month_key = f"_select_box_month{side_suffix}"
-                persistent_month_key = selected_month_key
-
-                # Load persistent value into temp widget key
-                if persistent_month_key in st.session_state:
-                    # Find translated label corresponding to the persistent value
-                    persistent_value = st.session_state[persistent_month_key]
-                    for label, month_val in translated_month_map.items():
-                        if month_val == persistent_value:
-                            st.session_state[temp_month_key] = label
-                            break
-                    else:
-                        # fallback to default index_sel_month if no match
-                        st.session_state[temp_month_key] = list(translated_month_map.keys())[index_sel_month]
-                else:
-                    # Initialize if missing
-                    st.session_state[persistent_month_key] = list(translated_month_map.values())[index_sel_month]
-                    st.session_state[temp_month_key] = list(translated_month_map.keys())[index_sel_month]
-
-                def on_month_change(persistent_key=persistent_month_key, temp_key=temp_month_key):
-                    # When widget changes, sync persistent key with selected month value
-                    selected_label = st.session_state[temp_key]
-                    st.session_state[persistent_key] = translated_month_map[selected_label]
-
-                # Create the selectbox widget with the temp key and on_change callback
-                st.selectbox(
-                    t('select_month'),
-                    options=list(translated_month_map.keys()),
-                    index=list(translated_month_map.keys()).index(st.session_state[temp_month_key]),
-                    key=temp_month_key,
-                    on_change=on_month_change
-                )
-
-                # selected_month is now the persistent month value
-                selected_month = st.session_state[persistent_month_key]
-
-            selected_date = pd.to_datetime(f"{selected_year}-{selected_month}-01").date()
-            filtered_data = filter_data_by_time(data, "Month", selected_date)
-
-
-        elif st.session_state.time_period == "Year":
-            available_years = get_available_years(data)
-            if len(available_years) == 1:
-                st.warning(t("not_enough_data_to_compare"))
-                st.stop()
-            else:
-                with st.columns([1, 1, 1], gap="small")[1]:
-                    # Load persistent value to temporary widget key, or set default
-                    load_value(selected_year_key, default=available_years[-1])
-
-                    st.selectbox(
-                        t('select_year'),
-                        available_years,
-                        value=st.session_state[f"_{selected_year_key}"],  # set selected value directly
-                        key=f"_{selected_year_key}",
-                        on_change=store_value,
-                        args=(selected_year_key,),
-                    )
-
-                    # Sync back to persistent key
-                    st.session_state[selected_year_key] = st.session_state[f"_{selected_year_key}"]
-
-                    selected_date = pd.to_datetime(f"{st.session_state[selected_year_key]}-01-01").date()
-                    filtered_data = filter_data_by_time(data, "Year", selected_date)
-
-        return selected_date, filtered_data
-
-filtered_date_1, filtered_data_1 = select_and_filter_data('_1', c11)
-plot_pie_chart(filtered_data_1, c11, "pie-chart1", colors=appliance_colors)
-
-filtered_date_2, filtered_data_2 = select_and_filter_data('_2', c12)
-plot_pie_chart(filtered_data_2, c12, "pie-chart2", colors=appliance_colors)
-
-with st.container(border=True):
-    if filtered_data_1.empty or filtered_data_2.empty:
-        st.stop()
+    if st.session_state.chart_type == 'bar_chart':
+        plot_horizontal_bar_chart(filtered_data, colors=appliance_colors)
     else:
-        plot_percentage_bar_chart(filtered_data_1, filtered_data_2, colors=appliance_colors, time_period=st.session_state.time_period)
+        plot_pie_chart(filtered_data, c11, 'pie_chart', colors=appliance_colors)
+
+with c12:
+    fig = create_line_chart(filtered_data, t_filter=st.session_state.time_period)
+    st.plotly_chart(fig, use_container_width=True)

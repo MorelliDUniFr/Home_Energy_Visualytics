@@ -2,8 +2,10 @@ import os
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from config_loader import load_config
+import pyarrow.dataset as ds
+import re
 
 config, config_dir = load_config()
 
@@ -17,6 +19,7 @@ models_dir = str(config['Data']['models_dir'])
 scalers_dir = str(config['Data']['scalers_dir'])
 model_file = str(config['Data']['model_file'])
 target_scalers_file = str(config['Data']['target_scalers_file'])
+inferred_dataset_path = '../data/inferred_data'
 
 # Define a color palette
 color_palette = px.colors.qualitative.Pastel
@@ -29,6 +32,27 @@ DATE_FORMAT = "DD.MM.YYYY"
 # ---------------------------
 # Helper Functions
 # ---------------------------
+@st.cache_data(show_spinner=False)
+def load_inferred_data_partitioned(dataset_path: str, start_date: str, end_date: str) -> pd.DataFrame:
+    """
+    Load parquet dataset filtered by date partitions between start_date and end_date (inclusive).
+    Dates are strings in 'YYYY-MM-DD' format.
+    """
+    dataset = ds.dataset(dataset_path, format="parquet", partitioning="hive")
+
+    # Create filter expressions on partition column 'date'
+    start = datetime.strptime(start_date, "%Y-%m-%d").date()
+    end = datetime.strptime(end_date, "%Y-%m-%d").date()
+
+    # Build filter: date >= start AND date <= end
+    date_col = ds.field("date")
+    date_filter = (date_col >= start) & (date_col <= end)
+
+    table = dataset.to_table(filter=date_filter)
+    df = table.to_pandas()
+    return df
+
+
 def get_date_ranges():
     """Returns a dictionary with common date ranges."""
     today = date.today()
@@ -50,16 +74,6 @@ def safe_load_json(filename):
     else:
         st.error(f"Missing file: {filename}")
         return {}
-
-@st.cache_data
-def safe_load_parquet(filename, mtime):
-    """Safely loads a Parquet file into a DataFrame, with caching."""
-    print("Loading data from Parquet file...")
-    if os.path.exists(filename):
-        return pd.read_parquet(filename)
-    else:
-        st.error(f"Missing file: {filename}")
-        return pd.DataFrame()  # Return empty DataFrame to avoid crashes
 
 # ---------------------------
 # Load Data
@@ -109,7 +123,7 @@ else:
 
 parquet_file = os.path.join(data_path, inferred_data_file)
 mtime = os.path.getmtime(parquet_file)
-data = safe_load_parquet(parquet_file, mtime=mtime)
+# data = safe_load_parquet(parquet_file, mtime=mtime)
 
 # Sort appliances
 appliance_order = list(appliance_colors.keys())
@@ -172,6 +186,45 @@ time_filter = {
 # ---------------------------
 # Data Processing Functions
 # ---------------------------
+def load_and_filter_data_by_time(dataset_path: str, period: str, suffix: str):
+    """
+    period: 'Day', 'Week', 'Month', 'Year'
+    suffix: string like '_1', '_2' to access session_state keys
+    """
+
+    # Get selected values from session_state with fallback
+    if period == "Day":
+        selected_date = st.session_state.get(f"selected_date{suffix}", date.today() - timedelta(days=1))
+        start_date = end_date = selected_date
+    elif period == "Week":
+        selected_date = st.session_state.get(f"selected_date{suffix}", date.today() - timedelta(weeks=1))
+        start_date = selected_date
+        end_date = start_date + timedelta(days=6)
+    elif period == "Month":
+        selected_date = st.session_state.get(f"selected_date{suffix}", date.today() - timedelta(days=30))
+        start_date = selected_date
+        end_date = start_date + timedelta(days=29)
+    elif period == "Year":
+        selected_year = st.session_state.get(f"selected_year{suffix}", date.today().year - 1)
+        start_date = date(selected_year, 1, 1)
+        end_date = date(selected_year, 12, 31)
+    else:
+        # Default fallback, load yesterday
+        start_date = end_date = date.today() - timedelta(days=1)
+
+    # Format dates as strings
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    # Load filtered data from partitioned parquet dataset
+    df = load_inferred_data_partitioned(dataset_path, start_str, end_str)
+
+    # Now filter out appliances with zero sum as before
+    df_filtered = filter_appliances_with_nonzero_sum(df)
+
+    return start_date, df_filtered
+
+
 @st.cache_data
 def filter_data_by_time(f_data: pd.DataFrame, t_filter: str, selected_day: date) -> pd.DataFrame:
     """Filters data based on selected time range and removes appliances with zero total."""
@@ -216,33 +269,80 @@ def aggregate_data(f_data: pd.DataFrame, group_by_columns: list, date_column: st
 # Utility Functions
 # ---------------------------
 @st.cache_data
-def get_available_months_for_year(f_data: pd.DataFrame, selected_year: int) -> list:
-    """Returns available months for a given year in sorted order."""
-    filtered_data = f_data[f_data["month"].dt.year == selected_year]
-    return sorted(filtered_data["month"].dt.strftime("%B").unique(), key=lambda x: pd.to_datetime(x, format="%B").month)
+def get_available_years(f_data=None, dataset_path=None):
+    print(dataset_path)
+    """
+    Returns available years in sorted order.
+    If dataset_path is given, extract years from parquet partitions.
+    f_data argument is kept for compatibility but ignored if dataset_path is provided.
+    """
+    if dataset_path:
+        dataset = ds.dataset(dataset_path, format="parquet", partitioning="hive")
+        years = set()
 
+        for fragment in dataset.get_fragments():
+            expr = str(fragment.partition_expression)
+            year_match = re.search(r"year=([0-9]{4})", expr)
+            if year_match:
+                years.add(int(year_match.group(1)))
+
+        return sorted(years)
+    else:
+        # fallback: use f_data dataframe
+        return sorted(f_data["month"].dt.year.unique())
 
 @st.cache_data
-def get_available_years(f_data: pd.DataFrame):
-    """Returns available years in sorted order."""
-    return sorted(f_data["month"].dt.year.unique())
+def get_available_months_for_year(f_data=None, selected_year=None, dataset_path=None):
+    """
+    Returns available months for a given year in sorted order.
+    If dataset_path is given, extract months from parquet partitions.
+    f_data argument is kept for compatibility but ignored if dataset_path is provided.
+    """
+    if dataset_path and selected_year:
+        dataset = ds.dataset(dataset_path, format="parquet", partitioning="hive")
+        months = set()
+
+        for fragment in dataset.get_fragments():
+            expr = str(fragment.partition_expression)
+            year_match = re.search(r"year=([0-9]{4})", expr)
+            month_match = re.search(r"month=([0-9]{1,2})", expr)
+
+            if year_match and month_match:
+                year = int(year_match.group(1))
+                month = int(month_match.group(1))
+                if year == selected_year:
+                    months.add(month)
+
+        return sorted(months)
+    else:
+        # fallback: use f_data dataframe
+        filtered_data = f_data[f_data["month"].dt.year == selected_year]
+        # return month names sorted by month number
+        return sorted(
+            filtered_data["month"].dt.strftime("%B").unique(),
+            key=lambda x: pd.to_datetime(x, format="%B").month
+        )
 
 
-def find_sel_indexes(available_years, selected_year):
-    """Finds the indexes of the selected year and month."""
+def find_sel_indexes(available_years, selected_year, dataset_path):
+    """Finds the indexes of the selected year and month using partition metadata."""
+
     if selected_year is None:
         index_sel_year = len(available_years) - 1
     else:
         index_sel_year = available_years.index(selected_year)
 
     sel_year = available_years[index_sel_year]
-    available_months = get_available_months_for_year(data, sel_year)
+    available_months = get_available_months_for_year(dataset_path=dataset_path, selected_year=sel_year)
+
     if len(available_months) == 1:
         if len(available_years) == 1:
             index_sel_month = 0
         else:
             index_sel_year = len(available_years) - 2
-            available_months = get_available_months_for_year(data, available_years[index_sel_year])
+            # Update sel_year to new year index
+            sel_year = available_years[index_sel_year]
+            available_months = get_available_months_for_year(dataset_path=dataset_path, selected_year=sel_year)
             index_sel_month = len(available_months) - 1
     else:
         index_sel_month = len(available_months) - 2

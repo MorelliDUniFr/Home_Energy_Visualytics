@@ -346,5 +346,35 @@
     "it": "Non ci sono abbastanza anni da comparare",
     "fr": "Il n'y a pas assez d'années disponibles pour comparer",
     "de": "Es sind nicht genügend Jahre zum Vergleichen verfügbar"
+  },
+  "annotation_saved": {
+    "en": "Annotation saved successfully",
+    "it": "Annotazione salvata con successo",
+    "fr": "Annotation enregistrée avec succès",
+    "de": "Annotation erfolgreich gespeichert"
+  },
+  "annotations": {
+    "en": "Annotations",
+    "it": "Annotazioni",
+    "fr": "Annotations",
+    "de": "Anmerkungen"
+  },
+  "no_annotations_found": {
+    "en": "No annotations found for this period",
+    "it": "Nessuna annotazione trovata per questo periodo",
+    "fr": "Aucune annotation trouvée pour cette période",
+    "de": "Keine Anmerkungen für diesen Zeitraum gefunden"
+  },
+  "add_annotation": {
+    "en": "Add an annotation",
+    "it": "Aggiungi un'annotazione",
+    "fr": "Ajouter une annotation",
+    "de": "Eine Anmerkung hinzufügen"
+  },
+  "annotation_placeholder": {
+    "en": "Write and press Ctrl+Enter to submit",
+    "it": "Scrivi e premi Ctrl+Invio per inviare",
+    "fr": "Écrivez et appuyez sur Ctrl+Entrée pour soumettre",
+    "de": "Schreiben und Strg+Eingabetaste drücken, um zu senden"
   }
 }

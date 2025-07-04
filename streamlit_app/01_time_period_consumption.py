@@ -12,6 +12,7 @@ from utils.data_loader import get_earliest_date, load_and_filter_data_by_time
 import pandas as pd
 from utils.filters import time_filter
 from utils.appliances import appliance_colors
+from utils.annotations import load_annotations, save_annotations, add_annotation, get_grouped_annotations
 
 st.title(t('page_1_title'))
 
@@ -169,3 +170,61 @@ with c11:
 
 with c12:
     plot_line_chart(filtered_data, t_filter=st.session_state.time_period)
+
+st.divider()
+
+# Load annotations
+annotations = load_annotations()
+
+# Only initialize input once
+if "annotation_input" not in st.session_state:
+    st.session_state.annotation_input = ""
+
+# Input box
+st.text_area(
+    label=t('add_annotation'),
+    height=68,
+    max_chars=256,
+    key="annotation_input",
+    placeholder=t('annotation_placeholder'),
+)
+
+# Submission logic
+annotation_text = st.session_state.annotation_input
+if annotation_text.strip():
+    annotations = add_annotation(
+        annotations,
+        st.session_state.selected_date_1,
+        annotation_text,
+        st.session_state.time_period  # <== pass current time period
+    )
+    save_annotations(annotations)
+    st.success(t('annotation_saved'))
+    st.session_state.pop("annotation_input", None)
+    st.rerun()
+
+
+# Display annotations
+selected_date = st.session_state.get("selected_date_1")
+if selected_date:
+    grouped_annotations = get_grouped_annotations(annotations, selected_date, st.session_state.time_period, st.session_state.lang)
+
+    period_display_order = ["Year", "Month", "Week", "Day"]
+    any_found = False
+
+    for group in period_display_order:
+        entries = grouped_annotations.get(group, [])
+        if entries:
+            any_found = True
+            last_label = None
+            for _, display_label, text in entries:
+                if display_label != last_label:
+                    st.markdown(f"### {display_label}")
+                    last_label = display_label
+                st.markdown(
+                    f"<div style='margin: 0 0 2px 1.5em; font-size: 0.92em;'>• {text}</div>",
+                    unsafe_allow_html=True
+                )
+
+    if not any_found:
+        st.info(t("no_annotations_found"))

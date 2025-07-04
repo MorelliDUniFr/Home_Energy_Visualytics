@@ -11,7 +11,10 @@ scalers_dir = str(config['Data']['scalers_dir'])
 model_file = str(config['Data']['model_file'])
 target_scalers_file = str(config['Data']['target_scalers_file'])
 inferred_dir = 'inferred_data'
+annotations_file = str(config['Data']['annotations_file'])
+
 inferred_dataset_path = os.path.join(data_path, inferred_dir)
+annotations_path = os.path.join(data_path, annotations_file)
 
 # Define a color palette
 color_palette = px.colors.qualitative.Pastel

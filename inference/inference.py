@@ -8,8 +8,6 @@ import os
 from config_loader import load_config, logger
 from joblib import load
 import json
-import pyarrow as pa
-import pyarrow.parquet as pq
 
 # Load configuration
 config, config_dir = load_config()
@@ -42,15 +40,20 @@ with open(os.path.join(data_path, column_names_file), 'r') as file:
     column_names_json = json.load(file)
 
 # Create list of appliances from model filenames (removing suffix, underscores -> spaces)
-appliances_list = [f.replace('.pt', '').rsplit('_', 1)[0].replace('_', ' ').title() for f in os.listdir(model_path)]
+appliances_list = [
+    (name.replace('_', ' ').upper() if len(name.replace('_', '')) <= 2 else name.replace('_', ' ').title())
+    for name in [f.replace('.pt', '').rsplit('_', 1)[0] for f in os.listdir(model_path)]
+]
 
 
 def prepare_inference_input(filename):
     df = pd.read_parquet(filename)
 
+    # Drop unnecessary columns
     drop_cols = ['SMid', 'Pi', 'Po', 'P1o', 'P2o', 'P3o', 'Ei', 'Ei1', 'Ei2', 'Eo', 'Eo1', 'Eo2']
     df = df.drop(columns=[col for col in drop_cols if col in df.columns], errors='ignore')
 
+    # Rename it to match training schema
     rename_map = {
         'P1i': 'powerl1', 'P2i': 'powerl2', 'P3i': 'powerl3',
         'I1': 'currentl1', 'I2': 'currentl2', 'I3': 'currentl3',
@@ -58,10 +61,12 @@ def prepare_inference_input(filename):
     }
     df = df.rename(columns=rename_map)
 
+    # Extract and drop timestamp
     ts = df.pop('timestamp').reset_index(drop=True)
 
     df = df[list(rename_map.values())]
 
+    # Normalize input
     X = input_scaler.transform(df)
     return X, ts
 
@@ -93,8 +98,8 @@ def melt_dataframe(df):
                       id_vars=['timestamp'],
                       var_name='appliance',
                       value_name='value')
-    df_long['timestamp'] = pd.to_datetime(df_long['timestamp'])
-    df_long['date'] = df_long['timestamp'].dt.date
+    df_long['timestamp'] = pd.to_datetime(df_long['timestamp'], unit='ms')
+    # df_long['date'] = df_long['timestamp'].dt.date
     df_long['minute'] = df_long['timestamp'].dt.minute
     df_long['hour'] = df_long['timestamp'].dt.hour
     df_long['month'] = df_long['timestamp'].dt.to_period('M')
@@ -102,28 +107,43 @@ def melt_dataframe(df):
 
 
 def compute_other_column(p_df, sm_df):
+    # Ensure timestamps are datetime and sorted
     p_df['timestamp'] = pd.to_datetime(p_df['timestamp'])
     sm_df['timestamp'] = pd.to_datetime(sm_df['timestamp'])
 
     p_df = p_df.sort_values('timestamp').reset_index(drop=True)
     sm_df = sm_df.sort_values('timestamp').reset_index(drop=True)
 
+    # Sum predicted appliance power per timestamp (exclude 'timestamp' column)
     appliance_cols = p_df.columns.difference(['timestamp'])
     p_df['total_pred_power'] = p_df[appliance_cols].sum(axis=1)
 
-    phase_cols = [col for col in sm_df.columns if col.lower() in ['powerl1', 'powerl2', 'powerl3']]
+    # Sum smart meter phases to get total power per timestamp
+    phase_cols = [col for col in sm_df.columns if col in ['P1i', 'P2i', 'P3i']]
     sm_df['total_sm_power'] = sm_df[phase_cols].sum(axis=1)
 
+    # Merge on timestamp to align rows
     merged = pd.merge(p_df, sm_df[['timestamp', 'total_sm_power']], on='timestamp', how='inner')
 
-    merged['Other'] = (merged['total_sm_power'] - merged['total_pred_power']).clip(lower=0)
+    # Compute 'Other' = smart meter total - sum predicted appliances
+    merged['Other'] = merged['total_sm_power'] - merged['total_pred_power']
+
+    # Clip negative values to zero
+    merged['Other'] = merged['Other'].clip(lower=0)
 
     result = merged.drop(columns=['total_pred_power', 'total_sm_power'])
+
     return result
 
 
 def append_predictions(ts, predictions_dict):
     pred_df = pd.DataFrame({'timestamp': ts})
+
+    # Convert timestamp to datetime, assuming ts is Unix time in milliseconds
+    if np.issubdtype(pred_df['timestamp'].dtype, np.integer) or np.issubdtype(pred_df['timestamp'].dtype, np.floating):
+        pred_df['timestamp'] = pd.to_datetime(pred_df['timestamp'], unit='ms')
+    else:
+        pred_df['timestamp'] = pd.to_datetime(pred_df['timestamp'])
 
     for app, pred in predictions_dict.items():
         appliance_name = app.lower().replace(' ', '_')
@@ -139,27 +159,16 @@ def append_predictions(ts, predictions_dict):
     pred_df = compute_other_column(pred_df, sm_df)
     pred_df = melt_dataframe(pred_df)
 
-    # Ensure 'date' column is datetime.date (not string)
-    pred_df['date'] = pd.to_datetime(pred_df['date']).dt.date
-
-    # Generate folder name from the first date (as string)
-    first_date = pred_df['date'].iloc[0]
-    partition_folder = os.path.join(inferred_data_path, f'date={first_date.strftime("%Y-%m-%d")}')
+    # Get date from timestamp (but DO NOT add it as column!)
+    first_date_str = pd.to_datetime(pred_df['timestamp'].iloc[0]).strftime('%Y-%m-%d')
+    partition_folder = os.path.join(inferred_data_path, f'date={first_date_str}')
     os.makedirs(partition_folder, exist_ok=True)
+
     file_path = os.path.join(partition_folder, 'predictions.parquet')
 
-    # Merge with existing data if exists
-    if os.path.exists(file_path):
-        try:
-            existing_df = pd.read_parquet(file_path)
-            pred_df = pd.concat([existing_df, pred_df], ignore_index=True)
-        except Exception as ex:
-            logger.error(f"Error loading existing inference file: {ex}")
-
-    # Save data
+    # Overwrite any existing file
     pred_df.to_parquet(file_path, index=False)
-    logger.info(f"[{datetime.now()}] Predictions appended to {file_path}")
-
+    logger.info(f"[{datetime.now()}] Predictions saved to {file_path}")
 
 
 def time_matches(target_time_str):
@@ -189,4 +198,4 @@ if __name__ == "__main__":
         else:
             already_run_today = False
 
-        time_module.sleep(1)
+        time_module.sleep(30)

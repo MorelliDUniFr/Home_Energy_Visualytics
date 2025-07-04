@@ -1,16 +1,28 @@
 import uuid
-import os
 import json
 from datetime import time
-import pandas as pd
-import streamlit as st
 from streamlit import session_state as ss
-from utils import *
-from translations import t, translate_appliance_name
+from utils.translations import t, translate_appliance_name
+from utils.session_state_utils import load_value, store_value
+from utils.filters import time_filter, date_ranges
+from utils.data_loader import get_earliest_date
+import pandas as pd
+from utils.appliances import appliance_colors, format_appliance_name
+import streamlit as st
+from utils.data_loader import load_data_by_date_range
+from utils.config_utils import inferred_dataset_path, DATE_FORMAT, data_path, models_dir, scalers_dir, model_file, target_scalers_file, color_palette
+import os
 
 st.title(t('page_3_title'))
 
-dataframe = data.copy()
+earliest_date = get_earliest_date(inferred_dataset_path)
+
+if 'selected_date_2' in st.session_state:
+    st.session_state.selected_date_2 = st.session_state.selected_date_2
+else:
+    st.session_state.selected_date_2 = date_ranges.get('yesterday', earliest_date)
+
+dataframe = load_data_by_date_range(inferred_dataset_path, st.session_state.selected_date_1, st.session_state.selected_date_2)
 
 # Columns that must always be included in the display
 mandatory_columns = ['date', 'timestamp']
@@ -124,6 +136,13 @@ if uploaded_files:
 
 st.divider()
 
+if st.session_state.selected_date_1 > st.session_state.selected_date_2:
+    st.session_state.selected_date_2 = st.session_state.selected_date_1
+    st.session_state['_selected_date_2'] = st.session_state['_selected_date_1']
+    load_value("selected_date_2")
+    dataframe = load_data_by_date_range(inferred_dataset_path, st.session_state.selected_date_1,
+                                        st.session_state.selected_date_2)
+
 # Two columns for selecting columns and appliances to display
 col1, col2 = st.columns(2)
 
@@ -167,21 +186,27 @@ with col2:
 col3, col4, _, col5, col6, col7, _ = st.columns([1.2, 1.2, 2.6, 1.2, 1.2, 1.2, 1.4])
 
 with col3:
+    max_date = time_filter['Day']['max_value']
     start_date = st.date_input(
         t('start_date'),
-        value=dataframe['date'].max() - pd.Timedelta(days=7),
-        min_value=dataframe['date'].min(),
-        max_value=dataframe['date'].max(),
-        format=DATE_FORMAT
+        min_value=earliest_date,
+        max_value=max_date,
+        format=DATE_FORMAT,
+        key='_selected_date_1',
+        on_change=store_value,
+        args=('selected_date_1',)
     )
 
 with col4:
+    max_date = time_filter['Day']['max_value']
     end_date = st.date_input(
         t('end_date'),
-        value=dataframe['date'].max(),
-        min_value=dataframe['date'].min(),
-        max_value=dataframe['date'].max(),
-        format=DATE_FORMAT
+        min_value=earliest_date,
+        max_value=max_date,
+        format=DATE_FORMAT,
+        key='_selected_date_2',
+        on_change=store_value,
+        args=('selected_date_2',)
     )
 
 with col5:
@@ -195,9 +220,6 @@ with col7:
     if filter_by_time:
         end_time = st.time_input(t('end_time'), value=time(23, 59))
 
-# Apply date filtering
-dataframe = dataframe[(dataframe['date'] >= start_date) & (dataframe['date'] <= end_date)]
-
 # Apply time filtering if enabled
 if filter_by_time:
     dataframe = dataframe[(dataframe['timestamp'].dt.time >= start_time) & (dataframe['timestamp'].dt.time <= end_time)]
@@ -206,4 +228,4 @@ if filter_by_time:
 dataframe_display = dataframe[selected_columns]
 
 # Display the filtered dataframe without the index, and dynamic height for 8 rows + header
-st.dataframe(dataframe_display, use_container_width=True, hide_index=True, height=35 * (len(dataframe_display) + 1))
+st.dataframe(dataframe_display, use_container_width=True, hide_index=True, height=35 * (9 + 1))

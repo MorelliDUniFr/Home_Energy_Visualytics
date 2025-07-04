@@ -1,9 +1,8 @@
 import streamlit as st
 import os
 import json
-
-# Load configuration
 from config_loader import load_config
+
 config, config_dir = load_config()
 
 # Set environment and data paths
@@ -14,7 +13,6 @@ data_path = str(config[env]['data_path'])
 def load_translations(filename):
     with open(os.path.join(data_path, filename), "r", encoding="utf-8") as f:
         return json.load(f)
-
 
 
 translations = load_translations("translations.json")

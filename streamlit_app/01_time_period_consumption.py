@@ -1,13 +1,20 @@
-from utils import *
-from pie_chart import plot_pie_chart
-from line_chart import create_line_chart
-from horizontal_bar_chart import plot_horizontal_bar_chart
-from translations import t
+from charts.pie_chart import plot_pie_chart
+from charts.line_chart import plot_line_chart
+from charts.horizontal_bar_chart import plot_horizontal_bar_chart
+from utils.translations import t
 from babel.dates import format_date
-from datetime import datetime, date
-from session_utils import store_value, load_value
+from datetime import datetime
+import streamlit as st
+from utils.session_state_utils import load_value, store_value
+from utils.config_utils import inferred_dataset_path, DATE_FORMAT
+from utils.partition_utils import get_available_years, get_available_months_for_year
+from utils.data_loader import get_earliest_date, load_and_filter_data_by_time
+import pandas as pd
+from utils.filters import time_filter
+from utils.appliances import appliance_colors
 
 st.title(t('page_1_title'))
+
 
 c1, c2, c3, _ = st.columns([1.33, 1.33, 1.33, 6])
 
@@ -34,13 +41,17 @@ with st.container():
     # === Day or Week Selection ===
     if st.session_state.time_period in ['Day', 'Week']:
         with c2:
+            earliest_date = get_earliest_date(inferred_dataset_path)
             max_date = time_filter[st.session_state.time_period]['max_value']
 
             load_value('selected_date_1', default=max_date)
 
+            if max_date < earliest_date:
+                max_date = time_filter['Day']['max_value']
+
             st.date_input(
                 t(time_filter[st.session_state.time_period]['input_string']),
-                min_value=date_ranges['another_yesterday'],
+                min_value=earliest_date,
                 max_value=max_date,
                 format=DATE_FORMAT,
                 key='_selected_date_1',
@@ -157,5 +168,4 @@ with c11:
         plot_pie_chart(filtered_data, c11, 'pie_chart', colors=appliance_colors)
 
 with c12:
-    fig = create_line_chart(filtered_data, t_filter=st.session_state.time_period)
-    st.plotly_chart(fig, use_container_width=True)
+    plot_line_chart(filtered_data, t_filter=st.session_state.time_period)

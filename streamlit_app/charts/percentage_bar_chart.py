@@ -1,7 +1,13 @@
-from utils import *
-from translations import *
+from utils.translations import t, translate_appliance_name
+import plotly.express as px
 from babel.dates import format_date
 from datetime import datetime
+import pandas as pd
+from utils.filters import time_filter
+from utils.formatting import format_value
+from utils.appliances import appliance_order
+import streamlit as st
+
 
 
 def plot_percentage_bar_chart(f_data_1, f_data_2, colors, time_period):
@@ -9,6 +15,10 @@ def plot_percentage_bar_chart(f_data_1, f_data_2, colors, time_period):
     Plots a grouped bar chart comparing appliance usage between two datasets (dates),
     with an option to view in actual Wh or as relative percentages.
     """
+    # Convert 'date' column to datetime.date
+    f_data_1['date'] = pd.to_datetime(f_data_1['date']).dt.date
+    f_data_2['date'] = pd.to_datetime(f_data_2['date']).dt.date
+
     # Extract and format the date for both datasets
     date_1 = f_data_1['date'].iloc[0].strftime(time_filter[time_period]["date_format"])
     date_2 = f_data_2['date'].iloc[0].strftime(time_filter[time_period]["date_format"])

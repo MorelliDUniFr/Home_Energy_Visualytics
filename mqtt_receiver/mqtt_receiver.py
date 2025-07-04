@@ -8,18 +8,18 @@ import pandas as pd
 from datetime import datetime, timedelta
 import threading
 from config_loader import load_config, logger
-import shutil  # for file copy
+import shutil
 
 config, config_dir = load_config()
 
 env = config['Settings']['environment']
-data_path = config[env]['data_path']
+data_path = str(config[env]['data_path'])
 broker = config['MQTT']['broker']
 port = int(config['MQTT']['port'])
 topic = config['MQTT']['topic']
 transfer_timestamp = config['MQTT']['transfer_timestamp']
-daily_data_file = config['Data']['daily_data_file']  # e.g. 'daily.parquet'
-whole_data_dir = config['Data']['whole_data_dir']  # change to directory path for whole dataset partitions
+daily_data_file = str(config['Data']['daily_data_file'])
+whole_data_dir = str(config['Data']['whole_data_dir'])
 
 # Calculate reset time (one minute after transfer time)
 transfer_time = datetime.strptime(transfer_timestamp, "%H:%M")
@@ -38,9 +38,9 @@ already_copied_today = False
 def write_daily_file(df):
     """Overwrite daily file with the given DataFrame."""
     daily_path = os.path.join(data_path, daily_data_file)
-    table = pa.Table.from_pandas(df)
+    table = pa.Table.from_pandas(df=df)
     pq.write_table(table, daily_path)
-    logger.info(f"Daily file written with {len(df)} rows.")
+    # logger.info(f"Daily file written with {len(df)} rows.")
 
 
 def flush_buffer_to_daily_file():

@@ -340,5 +340,11 @@
     "it": "Energia",
     "fr": "Énergie",
     "de": "Energie"
+  },
+  "not_enough_data_to_compare": {
+    "en": "There are not enough available years to compare",
+    "it": "Non ci sono abbastanza anni da comparare",
+    "fr": "Il n'y a pas assez d'années disponibles pour comparer",
+    "de": "Es sind nicht genügend Jahre zum Vergleichen verfügbar"
   }
 }

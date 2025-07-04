@@ -1,7 +1,8 @@
-from utils import *
 import streamlit as st
 import plotly.express as px
-from translations import t, translate_appliance_name
+from utils.translations import t, translate_appliance_name
+from utils.appliances import appliance_order
+from utils.formatting import format_value
 
 
 def plot_pie_chart(f_data, column, chart_key, colors):

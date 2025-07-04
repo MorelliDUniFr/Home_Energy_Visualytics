@@ -1,5 +1,5 @@
 import streamlit as st
-from translations import t, languages
+from utils.translations import t, languages
 
 
 # --- Set default session state values ---
@@ -15,7 +15,6 @@ default_state = {
 for key, value in default_state.items():
     if key not in st.session_state:
         st.session_state[key] = value
-
 
 # --- Define pages ---
 pg = st.navigation([

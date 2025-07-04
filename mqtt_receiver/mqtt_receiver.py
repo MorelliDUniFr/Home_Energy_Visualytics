@@ -8,43 +8,39 @@ import pandas as pd
 from datetime import datetime, timedelta
 import threading
 from config_loader import load_config, logger
+import shutil
 
 config, config_dir = load_config()
 
-# Determine environment
 env = config['Settings']['environment']
-data_path = config[env]['data_path']
+data_path = str(config[env]['data_path'])
 broker = config['MQTT']['broker']
 port = int(config['MQTT']['port'])
 topic = config['MQTT']['topic']
 transfer_timestamp = config['MQTT']['transfer_timestamp']
-daily_data_file = config['Data']['daily_data_file']
-whole_data_file = config['Data']['whole_data_file']
+daily_data_file = str(config['Data']['daily_data_file'])
+whole_data_dir = str(config['Data']['whole_data_dir'])
 
 # Calculate reset time (one minute after transfer time)
 transfer_time = datetime.strptime(transfer_timestamp, "%H:%M")
 reset_time = transfer_time + timedelta(minutes=1)
 RESET_TIMESTAMP = reset_time.strftime("%H:%M")
 
-# Ensure data directory exists
 os.makedirs(data_path, exist_ok=True)
+os.makedirs(os.path.join(data_path, whole_data_dir), exist_ok=True)
 
-# Useless columns to drop from daily data file
 columns_to_drop = ['SMid', 'Po', 'P1o', 'P2o', 'P3o', 'Ei', 'Ei1', 'Ei2', 'Eo', 'Eo1', 'Eo2']
 
-buffer = []  # Buffer for incoming data batches
-already_written_today = False  # Flag for midnight whole file append
+buffer = []
+already_copied_today = False
 
 
-def append_to_parquet(df, parquet_path):
-    """Append df to parquet_path by reading existing file and concatenating."""
-    if os.path.exists(parquet_path):
-        existing_table = pq.read_table(parquet_path)
-        new_table = pa.Table.from_pandas(df=df)
-        combined_table = pa.concat_tables([existing_table, new_table])
-    else:
-        combined_table = pa.Table.from_pandas(df=df)
-    pq.write_table(combined_table, parquet_path)
+def write_daily_file(df):
+    """Overwrite daily file with the given DataFrame."""
+    daily_path = os.path.join(data_path, daily_data_file)
+    table = pa.Table.from_pandas(df=df)
+    pq.write_table(table, daily_path)
+    # logger.info(f"Daily file written with {len(df)} rows.")
 
 
 def flush_buffer_to_daily_file():
@@ -52,61 +48,66 @@ def flush_buffer_to_daily_file():
     if not buffer:
         return
     batch_df = pd.concat(buffer, ignore_index=True)
-    # Drop columns not needed in daily file
     batch_df_filtered = batch_df.drop(columns=columns_to_drop, errors='ignore')
-    append_to_parquet(batch_df_filtered, os.path.join(data_path, daily_data_file))
+    write_daily_file(batch_df_filtered)
     buffer.clear()
-    logger.info(f"Flushed {len(batch_df)} rows from buffer to daily file.")
 
 
-def append_daily_to_whole():
-    """Append entire daily parquet file to whole parquet file at midnight."""
+def copy_daily_to_partitioned_whole():
+    """
+    Copy daily file to whole dataset directory with date partitioning,
+    using the date from the data timestamps to name the partition folder.
+    """
     daily_path = os.path.join(data_path, daily_data_file)
-    whole_path = os.path.join(data_path, whole_data_file)
-
     if not os.path.exists(daily_path):
-        logger.info("Daily file does not exist; nothing to append.")
+        logger.info("Daily file does not exist; skipping whole data copy.")
         return
 
     try:
-        daily_table = pq.read_table(daily_path)
+        df = pd.read_parquet(daily_path)
+        if 'timestamp' not in df.columns:
+            logger.error("No 'timestamp' column found in daily data file.")
+            return
 
-        if os.path.exists(whole_path):
-            whole_table = pq.read_table(whole_path)
-            combined_table = pa.concat_tables([whole_table, daily_table])
-        else:
-            combined_table = daily_table
+        # Extract the date from the first timestamp (assumes all data is from one day)
+        data_date = pd.to_datetime(df['timestamp'].iloc[0]).date()
+        date_str = data_date.strftime("%Y-%m-%d")
 
-        pq.write_table(combined_table, whole_path)
-        logger.info("Appended daily file to whole file successfully.")
+        partition_folder = os.path.join(data_path, whole_data_dir, f"date={date_str}")
+        os.makedirs(partition_folder, exist_ok=True)
+
+        target_path = os.path.join(partition_folder, daily_data_file)
+
+        shutil.copy2(daily_path, target_path)
+        logger.info(f"Copied daily file to whole dataset partition: {target_path}")
 
     except Exception as e:
-        logger.error(f"Error appending daily file to whole file: {e}")
+        logger.error(f"Error copying daily file to whole dataset: {e}")
 
 
-def check_and_write_daily_data():
-    global already_written_today
-    logger.info("Starting time-checking thread...")
+def check_and_manage_daily_files():
+    global already_copied_today
+    logger.info("Starting daily file management thread...")
     while True:
         now = datetime.now()
         current_time = now.strftime("%H:%M")
 
-        if current_time == transfer_timestamp and not already_written_today:
-            logger.info(f"{transfer_timestamp} reached — appending daily file to whole file.")
-            flush_buffer_to_daily_file()  # flush any remaining data before appending
-            append_daily_to_whole()
-            already_written_today = True
+        if current_time == transfer_timestamp and not already_copied_today:
+            logger.info(f"{transfer_timestamp} reached — flushing buffer and copying daily file.")
+            flush_buffer_to_daily_file()
+            copy_daily_to_partitioned_whole()
+            already_copied_today = True
 
         if current_time == RESET_TIMESTAMP:
-            already_written_today = False
+            already_copied_today = False
 
         time.sleep(1)
 
 
 def on_connect(client, userdata, flags, rc):
-    logger.info("Connected with result code " + str(rc))
+    logger.info(f"Connected with result code {rc}")
     client.subscribe(topic)
-    logger.info(f"Connected with result code " + str(rc))
+    logger.info(f"Subscribed to topic: {topic}")
 
 
 def on_message(client, userdata, msg):
@@ -121,6 +122,7 @@ def on_message(client, userdata, msg):
 
         buffer.append(new_data)
 
+        # Flush buffer if it reaches 60 entries (about 10 minutes if messages every 10s)
         if len(buffer) >= 60:
             flush_buffer_to_daily_file()
 
@@ -128,7 +130,7 @@ def on_message(client, userdata, msg):
         logger.error(f"Error decoding JSON: {e}")
 
 
-# Initialize MQTT client
+# --- Main setup ---
 logger.info("Initializing MQTT client...")
 client = mqtt.Client()
 client.on_connect = on_connect
@@ -140,7 +142,7 @@ logger.info(f"Connected to broker {broker} on port {port}")
 client.loop_start()
 
 logger.info(f"Transfer timestamp: {transfer_timestamp}")
-threading.Thread(target=check_and_write_daily_data, daemon=True).start()
+threading.Thread(target=check_and_manage_daily_files, daemon=True).start()
 
 while True:
     time.sleep(1)

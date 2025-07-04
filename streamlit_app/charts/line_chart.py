@@ -1,14 +1,16 @@
-from utils import *
 import streamlit as st
 import plotly.express as px
 import pandas as pd
-from translations import t, translate_appliance_name
+from utils.translations import t, translate_appliance_name
+from utils.formatting import format_value
+from utils.appliances import appliance_colors
+from utils.filters import time_filter
+from utils.appliances import appliance_order, rgb_to_rgba
 
-def create_line_chart(f_data, t_filter):
+def plot_line_chart(f_data, t_filter):
     required_columns = ['appliance', 'value', 'timestamp']
     if not all(col in f_data.columns for col in required_columns):
         st.warning(f'Data must contain the following columns: {', '.join(required_columns)}.')
-        return None
 
     f_data['timestamp'] = pd.to_datetime(f_data['timestamp'])
 
@@ -116,4 +118,4 @@ def create_line_chart(f_data, t_filter):
     fig.update_xaxes(rangeslider_visible=True)
     fig.update_yaxes(type='linear', autorange=True)
 
-    return fig
+    st.plotly_chart(fig, use_container_width=True)

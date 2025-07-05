@@ -2,7 +2,7 @@ import pandas as pd
 import os
 
 # Input and output paths
-input_parquet_path = '../data/demo_inferred_data.parquet'  # your big file
+input_parquet_path = '../data/demo_inferred_data.parquet'
 output_root = '../data/demo_dataset'
 
 # Load the big file
@@ -28,4 +28,4 @@ for date, group in grouped:
     output_path = os.path.join(folder_path, 'predictions.parquet')
     group.to_parquet(output_path, index=False)
 
-print("✅ Done splitting into daily folders.")
+print("Done splitting into daily folders.")

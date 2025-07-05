@@ -5,22 +5,20 @@ from streamlit import session_state as ss
 from utils.translations import t, translate_appliance_name
 from utils.session_state_utils import load_value, store_value
 from utils.filters import time_filter, date_ranges
-from utils.data_loader import get_earliest_date
+from utils.data_loader import get_earliest_date, get_dataset_fingerprint
 import pandas as pd
-from utils.appliances import appliance_colors, format_appliance_name
+from utils.appliances import appliance_colors, format_appliance_name, get_or_generate_appliance_colors
 import streamlit as st
 from utils.data_loader import load_data_by_date_range
-from utils.config_utils import inferred_dataset_path, DATE_FORMAT, data_path, models_dir, scalers_dir, model_file, target_scalers_file, color_palette
+from utils.config_utils import inferred_dataset_path, DATE_FORMAT, data_path, models_dir, scalers_dir, model_file, target_scalers_file, color_palette, appliances_colors_file
 import os
 
 st.title(t('page_3_title'))
 
 earliest_date = get_earliest_date(inferred_dataset_path)
 
-if 'selected_date_2' in st.session_state:
-    st.session_state.selected_date_2 = st.session_state.selected_date_2
-else:
-    st.session_state.selected_date_2 = date_ranges.get('yesterday', earliest_date)
+load_value("selected_date_1", default=earliest_date)
+load_value("selected_date_2", default=date_ranges.get('yesterday', earliest_date))
 
 dataframe = load_data_by_date_range(inferred_dataset_path, st.session_state.selected_date_1, st.session_state.selected_date_2)
 
@@ -40,7 +38,7 @@ def execute_cb():
 @st.dialog(t('dialog_deletion'))
 def dialog(name):
     st.write(f"{t('confirm_deletion')}: **{name}**?")
-    col1, col2 = st.columns(2)
+    col1, _, _, col2 = st.columns(4)
     with col1:
         if st.button("✅ " + t('confirm')):
             base_name = name.replace(' ', '_').lower()
@@ -122,7 +120,7 @@ if uploaded_files:
             appliance_colors[appliance_name] = color_palette[len(appliance_colors) % len(color_palette)]
 
             # Update colors json file with alphabetical sorting, 'Other' last
-            with open('appliance_colors.json', 'r+') as f:
+            with open(os.path.join(data_path, appliances_colors_file), 'r+') as f:
                 data_colors = json.load(f)
                 data_colors[appliance_name] = appliance_colors[appliance_name]
                 sorted_data = dict(sorted(

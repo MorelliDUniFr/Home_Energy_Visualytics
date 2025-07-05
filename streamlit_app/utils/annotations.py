@@ -96,3 +96,24 @@ def get_grouped_annotations(annotations, date, selected_period, locale_code='en'
         )
 
     return grouped
+
+
+def delete_annotation(annotations, date_obj, text, period):
+    y, m, d = date_obj.strftime("%Y"), date_obj.strftime("%m"), date_obj.strftime("%d")
+    day_annotations = annotations.get(y, {}).get(m, {}).get(d, [])
+
+    filtered = [
+        ann for ann in day_annotations
+        if not (ann["text"] == text.strip() and ann.get("period", "Day") == period)
+    ]
+
+    if filtered != day_annotations:
+        if filtered:
+            annotations[y][m][d] = filtered
+        else:
+            del annotations[y][m][d]
+            if not annotations[y][m]:
+                del annotations[y][m]
+            if not annotations[y]:
+                del annotations[y]
+    return annotations

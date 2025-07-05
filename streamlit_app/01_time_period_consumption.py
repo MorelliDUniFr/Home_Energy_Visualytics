@@ -12,7 +12,7 @@ from utils.data_loader import get_earliest_date, load_and_filter_data_by_time
 import pandas as pd
 from utils.filters import time_filter
 from utils.appliances import appliance_colors
-from utils.annotations import load_annotations, save_annotations, add_annotation, get_grouped_annotations
+from utils.annotations import load_annotations, save_annotations, add_annotation, get_grouped_annotations, delete_annotation
 
 st.title(t('page_1_title'))
 
@@ -183,7 +183,7 @@ if "annotation_input" not in st.session_state:
 st.text_area(
     label=t('add_annotation'),
     height=68,
-    max_chars=256,
+    max_chars=120,
     key="annotation_input",
     placeholder=t('annotation_placeholder'),
 )
@@ -195,7 +195,7 @@ if annotation_text.strip():
         annotations,
         st.session_state.selected_date_1,
         annotation_text,
-        st.session_state.time_period  # <== pass current time period
+        st.session_state.time_period
     )
     save_annotations(annotations)
     st.success(t('annotation_saved'))
@@ -221,28 +221,44 @@ if selected_date:
         if entries:
             any_found = True
 
-            # Group entries by display label
+            # Group entries by display label, keep date and text for each
             grouped_by_label = {}
-            for _, display_label, text in entries:
-                grouped_by_label.setdefault(display_label, []).append(text)
+            for date_obj, display_label, text in entries:
+                grouped_by_label.setdefault(display_label, []).append((date_obj, text))
 
-            for display_label, texts in grouped_by_label.items():
+            for display_label, items in grouped_by_label.items():
                 with st.expander(display_label):
-                    annotations_html = "<div style='max-height: 200px; overflow-y: auto; padding-right: 0.5em;'>"
-                    for text in texts:
-                        annotations_html += (
-                            "<div style='"
-                            "background-color: #22222A;"
-                            "border: 1px solid #3D3E43;"
-                            "border-radius: 0.5em;"
-                            "padding: 0.4em 1em;"
-                            "margin: 0.3em 0;"
-                            "font-size: 0.92em;"
-                            f"'>{text}</div>"
-                        )
-                    annotations_html += "</div>"
+                    for date_obj, text in items:
+                        period = group
+                        annotation_id = f"{hash((date_obj, text, period))}"
 
-                    st.markdown(annotations_html, unsafe_allow_html=True)
+                        col1, col2 = st.columns([0.9, 0.1])
+
+                        with col1:
+                            st.markdown(
+                                f"""
+                                <div style="
+                                    background-color: #22222A;
+                                    border: 1px solid #3D3E43;
+                                    border-radius: 0.5em;
+                                    padding: 0 1em;
+                                    margin: 0em 0;
+                                    font-size: 0.92em;
+                                    height: 40px;
+                                    display: flex;
+                                    align-items: center;
+                                ">
+                                    {text}
+                                </div>
+                                """,
+                                unsafe_allow_html=True,
+                            )
+
+                        with col2:
+                            if st.button("🗑️", key=f"del_{annotation_id}", help="Delete annotation"):
+                                annotations = delete_annotation(annotations, date_obj, text, period)
+                                save_annotations(annotations)
+                                st.rerun()
 
     if not any_found:
         st.info(t("no_annotations_found"))

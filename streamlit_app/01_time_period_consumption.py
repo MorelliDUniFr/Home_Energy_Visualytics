@@ -206,7 +206,12 @@ if annotation_text.strip():
 # Display annotations
 selected_date = st.session_state.get("selected_date_1")
 if selected_date:
-    grouped_annotations = get_grouped_annotations(annotations, selected_date, st.session_state.time_period, st.session_state.lang)
+    grouped_annotations = get_grouped_annotations(
+        annotations,
+        selected_date,
+        st.session_state.time_period,
+        st.session_state.lang
+    )
 
     period_display_order = ["Year", "Month", "Week", "Day"]
     any_found = False
@@ -215,25 +220,30 @@ if selected_date:
         entries = grouped_annotations.get(group, [])
         if entries:
             any_found = True
-            last_label = None
-            for _, display_label, text in entries:
-                if display_label != last_label:
-                    st.markdown(f"### {display_label}")
-                    last_label = display_label
 
-                st.markdown(
-                    f"""
-                    <div style='
-                        background-color: #22222A;
-                        border: 1px solid #3D3E43;
-                        border-radius: 0.5em;
-                        padding: 0.4em 1em;
-                        margin: 0.3em 0 0.3em 0.6em;
-                        font-size: 0.92em;
-                    '>{text}</div>
-                    """,
-                    unsafe_allow_html=True
-                )
+            # Group entries by display label
+            grouped_by_label = {}
+            for _, display_label, text in entries:
+                grouped_by_label.setdefault(display_label, []).append(text)
+
+            for display_label, texts in grouped_by_label.items():
+                with st.expander(display_label):
+                    annotations_html = "<div style='max-height: 200px; overflow-y: auto; padding-right: 0.5em;'>"
+                    for text in texts:
+                        annotations_html += (
+                            "<div style='"
+                            "background-color: #22222A;"
+                            "border: 1px solid #3D3E43;"
+                            "border-radius: 0.5em;"
+                            "padding: 0.4em 1em;"
+                            "margin: 0.3em 0;"
+                            "font-size: 0.92em;"
+                            f"'>{text}</div>"
+                        )
+                    annotations_html += "</div>"
+
+                    st.markdown(annotations_html, unsafe_allow_html=True)
 
     if not any_found:
         st.info(t("no_annotations_found"))
+

@@ -6,25 +6,19 @@ import os
 import re
 from .filters import filter_appliances_with_nonzero_sum, time_filter
 
-
 @st.cache_data(show_spinner=False)
-def load_inferred_data_partitioned(dataset_path: str, start_date: str, end_date: str) -> pd.DataFrame:
+def load_inferred_data_partitioned(dataset_path: str, start_date: str, end_date: str, fingerprint: float) -> pd.DataFrame:
     """
     Load parquet dataset filtered by date partitions between start_date and end_date (inclusive).
-    Dates are strings in 'YYYY-MM-DD' format.
+    The cache is invalidated whenever the fingerprint changes.
     """
     dataset = ds.dataset(dataset_path, format="parquet", partitioning="hive")
 
-    # Create filter expressions on partition column 'date'
     start = datetime.strptime(start_date, "%Y-%m-%d").date()
     end = datetime.strptime(end_date, "%Y-%m-%d").date()
 
-    start_str = start.strftime("%Y-%m-%d")
-    end_str = end.strftime("%Y-%m-%d")
-
-    date_col = ds.field("date")  # string type
-
-    date_filter = (date_col >= start_str) & (date_col <= end_str)
+    date_col = ds.field("date")
+    date_filter = (date_col >= start.strftime("%Y-%m-%d")) & (date_col <= end.strftime("%Y-%m-%d"))
 
     scanner = dataset.scanner(filter=date_filter)
     table = scanner.to_table()
@@ -61,10 +55,9 @@ def load_and_filter_data_by_time(dataset_path: str, period: str, suffix: str):
     start_str = start_date.strftime("%Y-%m-%d")
     end_str = end_date.strftime("%Y-%m-%d")
 
-    # Load filtered data from partitioned parquet dataset
-    df = load_inferred_data_partitioned(dataset_path, start_str, end_str)
+    fingerprint = get_dataset_fingerprint(dataset_path)
 
-    # Now filter out appliances with zero sum as before
+    df = load_inferred_data_partitioned(dataset_path, start_str, end_str, fingerprint)
     df_filtered = filter_appliances_with_nonzero_sum(df)
 
     return start_date, df_filtered
@@ -113,7 +106,25 @@ def load_data_by_date_range(dataset_path: str, start_date: date, end_date: date)
     start_str = start_date.strftime("%Y-%m-%d")
     end_str = end_date.strftime("%Y-%m-%d")
 
-    df = load_inferred_data_partitioned(dataset_path, start_str, end_str)
+    fingerprint = get_dataset_fingerprint(dataset_path)
+    df = load_inferred_data_partitioned(dataset_path, start_str, end_str, fingerprint)
     df_filtered = filter_appliances_with_nonzero_sum(df)
 
     return df_filtered
+
+
+def get_dataset_fingerprint(dataset_path: str) -> float:
+    """
+    Returns the latest modification time of any file or folder inside the dataset directory.
+    """
+    latest_mtime = 0
+    for root, dirs, files in os.walk(dataset_path):
+        for name in dirs + files:
+            try:
+                full_path = os.path.join(root, name)
+                mtime = os.path.getmtime(full_path)
+                if mtime > latest_mtime:
+                    latest_mtime = mtime
+            except FileNotFoundError:
+                pass  # Might happen during folder writes
+    return latest_mtime

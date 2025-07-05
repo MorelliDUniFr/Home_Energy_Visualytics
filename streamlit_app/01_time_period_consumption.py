@@ -16,7 +16,6 @@ from utils.annotations import load_annotations, save_annotations, add_annotation
 
 st.title(t('page_1_title'))
 
-
 c1, c2, c3, _ = st.columns([1.33, 1.33, 1.33, 6])
 
 with st.container():
@@ -221,8 +220,18 @@ if selected_date:
                 if display_label != last_label:
                     st.markdown(f"### {display_label}")
                     last_label = display_label
+
                 st.markdown(
-                    f"<div style='margin: 0 0 2px 1.5em; font-size: 0.92em;'>• {text}</div>",
+                    f"""
+                    <div style='
+                        background-color: #22222A;
+                        border: 1px solid #3D3E43;
+                        border-radius: 0.5em;
+                        padding: 0.4em 1em;
+                        margin: 0.3em 0 0.3em 0.6em;
+                        font-size: 0.92em;
+                    '>{text}</div>
+                    """,
                     unsafe_allow_html=True
                 )
 

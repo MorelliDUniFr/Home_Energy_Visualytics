@@ -6,7 +6,7 @@ from babel.dates import format_date
 from datetime import datetime, timedelta
 from utils.session_state_utils import load_value, store_value
 from utils.filters import time_filter, date_ranges, filter_appliances_with_nonzero_sum
-from utils.data_loader import get_earliest_date, load_inferred_data_partitioned
+from utils.data_loader import get_earliest_date, load_inferred_data_partitioned, get_dataset_fingerprint
 from utils.partition_utils import get_available_years, get_available_months_for_year, find_sel_indexes
 import pandas as pd
 from utils.appliances import appliance_colors
@@ -73,10 +73,12 @@ def select_and_filter_data(side_suffix: str, container_col):
                         {k: st.session_state[tk]})
                 )
 
+                fingerprint = get_dataset_fingerprint(inferred_dataset_path)
                 filtered_data = load_inferred_data_partitioned(
                     inferred_dataset_path,
                     selected_date.strftime("%Y-%m-%d"),
-                    selected_date.strftime("%Y-%m-%d")
+                    selected_date.strftime("%Y-%m-%d"),
+                    fingerprint=fingerprint,
                 )
                 filtered_data = filter_appliances_with_nonzero_sum(filtered_data)
 

@@ -1,75 +1,42 @@
 {
-  "Coffee Machine": {
-    "en": "Coffee Machine",
-    "it": "Macchina da Caffè",
-    "fr": "Machine à Café",
-    "de": "Kaffeemaschine"
-  },
-  "Dryer": {
-    "en": "Dryer",
-    "it": "Asciugatrice",
-    "fr": "Sèche-linge",
-    "de": "Wäschetrockner"
-  },
-  "Freezer": {
-    "en": "Freezer",
-    "it": "Congelatore",
-    "fr": "Congélateur",
-    "de": "Gefrierschrank"
-  },
-  "Fridge": {
-    "en": "Fridge",
-    "it": "Frigorifero",
-    "fr": "Réfrigérateur",
-    "de": "Kühlschrank"
-  },
-  "Lamp": {
-    "en": "Lamp",
-    "it": "Lampada",
-    "fr": "Lampe",
-    "de": "Lampe"
-  },
-  "Laptop": {
-    "en": "Laptop",
-    "it": "Laptop",
-    "fr": "Ordinateur Portable",
-    "de": "Laptop"
-  },
-  "Microwave": {
-    "en": "Microwave",
-    "it": "Microonde",
-    "fr": "Micro-ondes",
-    "de": "Mikrowelle"
-  },
-  "PC": {
-    "en": "PC",
-    "it": "PC",
-    "fr": "PC",
-    "de": "PC"
-  },
-  "Router": {
-    "en": "Router",
-    "it": "Router",
-    "fr": "Routeur",
-    "de": "Router"
-  },
-  "Tablet": {
-    "en": "Tablet",
-    "it": "Tablet",
-    "fr": "Tablette",
-    "de": "Tablet"
-  },
-  "Washing Machine": {
-    "en": "Washing Machine",
-    "it": "Lavatrice",
-    "fr": "Lave-linge",
-    "de": "Waschmaschine"
-  },
-  "Other": {
-    "en": "Other",
-    "it": "Altro",
-    "fr": "Autre",
-    "de": "Andere"
-  }
-}
+  "Coffee Machine": {"en": "Coffee Machine", "it": "Macchina da Caffè", "fr": "Machine à Café", "de": "Kaffeemaschine"},
+  "Dryer": {"en": "Dryer", "it": "Asciugatrice", "fr": "Sèche-linge", "de": "Wäschetrockner"},
+  "Freezer": {"en": "Freezer", "it": "Congelatore", "fr": "Congélateur", "de": "Gefrierschrank"},
+  "Fridge": {"en": "Fridge", "it": "Frigorifero", "fr": "Réfrigérateur", "de": "Kühlschrank"},
+  "Lamp": {"en": "Lamp", "it": "Lampada", "fr": "Lampe", "de": "Lampe"},
+  "Laptop": {"en": "Laptop", "it": "Laptop", "fr": "Ordinateur Portable", "de": "Laptop"},
+  "Microwave": {"en": "Microwave", "it": "Microonde", "fr": "Micro-ondes", "de": "Mikrowelle"},
+  "PC": {"en": "PC", "it": "PC", "fr": "PC", "de": "PC"},
+  "Router": {"en": "Router", "it": "Router", "fr": "Routeur", "de": "Router"},
+  "Tablet": {"en": "Tablet", "it": "Tablet", "fr": "Tablette", "de": "Tablet"},
+  "Washing Machine": {"en": "Washing Machine", "it": "Lavatrice", "fr": "Lave-linge", "de": "Waschmaschine"},
+  "Other": {"en": "Other", "it": "Altro", "fr": "Autre", "de": "Andere"},
 
+  "Oven": {"en": "Oven", "it": "Forno", "fr": "Four", "de": "Backofen"},
+  "Toaster": {"en": "Toaster", "it": "Tostapane", "fr": "Grille-pain", "de": "Toaster"},
+  "Kettle": {"en": "Kettle", "it": "Bollitore", "fr": "Bouilloire", "de": "Wasserkocher"},
+  "Dishwasher": {"en": "Dishwasher", "it": "Lavastoviglie", "fr": "Lave-vaisselle", "de": "Geschirrspüler"},
+  "TV": {"en": "TV", "it": "TV", "fr": "Télévision", "de": "Fernseher"},
+  "Printer": {"en": "Printer", "it": "Stampante", "fr": "Imprimante", "de": "Drucker"},
+  "Fan": {"en": "Fan", "it": "Ventilatore", "fr": "Ventilateur", "de": "Ventilator"},
+  "Heater": {"en": "Heater", "it": "Stufetta", "fr": "Chauffage", "de": "Heizung"},
+  "Air Conditioner": {"en": "Air Conditioner", "it": "Condizionatore", "fr": "Climatiseur", "de": "Klimaanlage"},
+  "Vacuum Cleaner": {"en": "Vacuum Cleaner", "it": "Aspirapolvere", "fr": "Aspirateur", "de": "Staubsauger"},
+  "Iron": {"en": "Iron", "it": "Ferro da Stiro", "fr": "Fer à Repasser", "de": "Bügeleisen"},
+  "Hair Dryer": {"en": "Hair Dryer", "it": "Asciugacapelli", "fr": "Sèche-cheveux", "de": "Haartrockner"},
+  "Electric Toothbrush": {"en": "Electric Toothbrush", "it": "Spazzolino Elettrico", "fr": "Brosse à Dents Électrique", "de": "Elektrische Zahnbürste"},
+  "Smart Speaker": {"en": "Smart Speaker", "it": "Altoparlante Intelligente", "fr": "Enceinte Connectée", "de": "Smart Speaker"},
+  "Thermostat": {"en": "Thermostat", "it": "Termostato", "fr": "Thermostat", "de": "Thermostat"},
+  "Water Pump": {"en": "Water Pump", "it": "Pompa d'Acqua", "fr": "Pompe à Eau", "de": "Wasserpumpe"},
+  "Electric Grill": {"en": "Electric Grill", "it": "Griglia Elettrica", "fr": "Grill Électrique", "de": "Elektrogrill"},
+  "Rice Cooker": {"en": "Rice Cooker", "it": "Cuociriso", "fr": "Cuiseur à Riz", "de": "Reiskocher"},
+  "Blender": {"en": "Blender", "it": "Frullatore", "fr": "Mixeur", "de": "Mixer"},
+  "Juicer": {"en": "Juicer", "it": "Spremiagrumi", "fr": "Presse-agrumes", "de": "Entsafter"},
+  "Food Processor": {"en": "Food Processor", "it": "Robot da Cucina", "fr": "Robot Culinaire", "de": "Küchenmaschine"},
+  "Deep Fryer": {"en": "Deep Fryer", "it": "Friggitrice", "fr": "Friteuse", "de": "Fritteuse"},
+  "Slow Cooker": {"en": "Slow Cooker", "it": "Pentola a Cottura Lenta", "fr": "Mijoteuse", "de": "Schongarer"},
+  "Dehumidifier": {"en": "Dehumidifier", "it": "Deumidificatore", "fr": "Déshumidificateur", "de": "Luftentfeuchter"},
+  "Humidifier": {"en": "Humidifier", "it": "Umidificatore", "fr": "Humidificateur", "de": "Luftbefeuchter"},
+  "3D Printer": {"en": "3D Printer", "it": "Stampante 3D", "fr": "Imprimante 3D", "de": "3D Drucker"},
+  "Electric Stove": {"en": "Electric Stove", "it": "Piano Cottura Elettrico", "fr": "Plaque de Cuisson Électrique", "de": "Elektroherd"}
+}

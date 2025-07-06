@@ -376,5 +376,11 @@
     "it": "Scrivi e premi Ctrl+Invio per inviare",
     "fr": "Écrivez et appuyez sur Ctrl+Entrée pour soumettre",
     "de": "Schreiben und Strg+Eingabetaste drücken, um zu senden"
+  },
+  "delete_annotation": {
+    "en": "Delete Annotation",
+    "it": "Elimina Annotazione",
+    "fr": "Supprimer l'Annotation",
+    "de": "Anmerkung löschen"
   }
 }

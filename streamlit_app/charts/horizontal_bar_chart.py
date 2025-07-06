@@ -3,7 +3,8 @@ import plotly.express as px
 from utils.translations import t, translate_appliance_name
 from utils.formatting import format_value
 
-def plot_horizontal_bar_chart(data, colors):
+
+def plot_horizontal_bar_chart(data, colors, chart_key):
     """
     Horizontal bar chart showing % contribution per appliance.
     Hover displays actual energy usage.
@@ -74,4 +75,4 @@ def plot_horizontal_bar_chart(data, colors):
         yaxis_fixedrange=True,  # Prevents zooming/panning on Y
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key=chart_key)

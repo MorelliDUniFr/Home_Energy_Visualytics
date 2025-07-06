@@ -11,6 +11,7 @@ from utils.partition_utils import get_available_years, get_available_months_for_
 import pandas as pd
 from utils.appliances import appliance_colors
 from utils.config_utils import inferred_dataset_path, DATE_FORMAT
+from charts.horizontal_bar_chart import plot_horizontal_bar_chart
 
 st.title(t('page_2_title'))
 
@@ -95,7 +96,6 @@ def select_and_filter_data(side_suffix: str, container_col):
                 selected_year = st.selectbox(
                     t('select_year'),
                     available_years,
-                    index=available_years.index(st.session_state[selected_year_key]),
                     key=f"select_box_year{side_suffix}"
                 )
                 st.session_state[selected_year_key] = selected_year
@@ -134,7 +134,6 @@ def select_and_filter_data(side_suffix: str, container_col):
                 st.selectbox(
                     t('select_month'),
                     options=list(translated_month_map.keys()),
-                    index=list(translated_month_map.keys()).index(st.session_state[temp_month_key]),
                     key=temp_month_key,
                     on_change=on_month_change
                 )
@@ -146,7 +145,8 @@ def select_and_filter_data(side_suffix: str, container_col):
             filtered_data = load_inferred_data_partitioned(
                 inferred_dataset_path,
                 selected_date.strftime("%Y-%m-%d"),
-                end_date.strftime("%Y-%m-%d")
+                end_date.strftime("%Y-%m-%d"),
+                fingerprint=get_dataset_fingerprint(inferred_dataset_path)
             )
             filtered_data = filter_appliances_with_nonzero_sum(filtered_data)
 
@@ -182,10 +182,19 @@ def select_and_filter_data(side_suffix: str, container_col):
         return selected_date, filtered_data
 
 filtered_date_1, filtered_data_1 = select_and_filter_data('_1', c11)
-plot_pie_chart(filtered_data_1, c11, "pie-chart1", colors=appliance_colors)
+if st.session_state.chart_type == 'bar_chart':
+    with c11:
+        plot_horizontal_bar_chart(filtered_data_1, colors=appliance_colors, chart_key='horizontal_bar_chart1')
+else:
+    plot_pie_chart(filtered_data_1, c11, 'pie_chart1', colors=appliance_colors)
+
 
 filtered_date_2, filtered_data_2 = select_and_filter_data('_2', c12)
-plot_pie_chart(filtered_data_2, c12, "pie-chart2", colors=appliance_colors)
+if st.session_state.chart_type == 'bar_chart':
+    with c12:
+        plot_horizontal_bar_chart(filtered_data_2, colors=appliance_colors, chart_key='horizontal_bar_chart2')
+else:
+    plot_pie_chart(filtered_data_2, c12, 'pie_chart2', colors=appliance_colors)
 
 with st.container(border=True):
     if filtered_data_1.empty or filtered_data_2.empty:

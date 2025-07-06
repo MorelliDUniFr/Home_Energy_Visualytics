@@ -163,7 +163,7 @@ with c11:
     )
 
     if st.session_state.chart_type == 'bar_chart':
-        plot_horizontal_bar_chart(filtered_data, colors=appliance_colors)
+        plot_horizontal_bar_chart(filtered_data, colors=appliance_colors, chart_key='horizontal_bar_chart1')
     else:
         plot_pie_chart(filtered_data, c11, 'pie_chart', colors=appliance_colors)
 
@@ -183,7 +183,7 @@ if "annotation_input" not in st.session_state:
 st.text_area(
     label=t('add_annotation'),
     height=68,
-    max_chars=120,
+    max_chars=240,
     key="annotation_input",
     placeholder=t('annotation_placeholder'),
 )
@@ -201,7 +201,6 @@ if annotation_text.strip():
     st.success(t('annotation_saved'))
     st.session_state.pop("annotation_input", None)
     st.rerun()
-
 
 # Display annotations
 selected_date = st.session_state.get("selected_date_1")
@@ -232,7 +231,7 @@ if selected_date:
                         period = group
                         annotation_id = f"{hash((date_obj, text, period))}"
 
-                        col1, col2 = st.columns([0.9, 0.1])
+                        col1, col2 = st.columns([0.95, 0.05], gap="small")
 
                         with col1:
                             st.markdown(
@@ -255,11 +254,10 @@ if selected_date:
                             )
 
                         with col2:
-                            if st.button("🗑️", key=f"del_{annotation_id}", help="Delete annotation"):
+                            if st.button("🗑️", key=f"del_{annotation_id}", help=t('delete_annotation')):
                                 annotations = delete_annotation(annotations, date_obj, text, period)
                                 save_annotations(annotations)
                                 st.rerun()
 
     if not any_found:
         st.info(t("no_annotations_found"))
-

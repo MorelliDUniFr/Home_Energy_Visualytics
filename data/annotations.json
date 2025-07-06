@@ -13,10 +13,6 @@
                 {
                     "text": "questo invece \u00e9 aggiunto alla settimana",
                     "period": "Week"
-                },
-                {
-                    "text": "this will be a veeeeeeeeery loooooooon comment on the current selected dayyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy, I need to test if it's gonna show good with this veeeeeeeeeeeeeeeeeery loooooooooooooooong comment",
-                    "period": "Day"
                 }
             ],
             "01": [

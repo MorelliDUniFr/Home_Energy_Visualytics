@@ -40,7 +40,6 @@ def write_daily_file(df):
     daily_path = os.path.join(data_path, daily_data_file)
     table = pa.Table.from_pandas(df=df)
     pq.write_table(table, daily_path)
-    # logger.info(f"Daily file written with {len(df)} rows.")
 
 
 def flush_buffer_to_daily_file():

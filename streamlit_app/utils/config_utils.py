@@ -8,6 +8,7 @@ data_path = str(config[env]['data_path'])
 appliances_colors_file = config['Data']['appliances_colors_file']
 models_dir = str(config['Data']['models_dir'])
 scalers_dir = str(config['Data']['scalers_dir'])
+target_scalers_dir = str(config['Data']['target_scalers_dir'])
 model_file = str(config['Data']['model_file'])
 target_scalers_file = str(config['Data']['target_scalers_file'])
 inferred_dir = str(config['Data']['inferred_dir'])

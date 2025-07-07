@@ -9,6 +9,11 @@ def plot_horizontal_bar_chart(data, colors, chart_key):
     Horizontal bar chart showing % contribution per appliance.
     Hover displays actual energy usage.
     """
+
+    if data.empty:
+        st.warning(t('warning_message'))
+        return
+
     df = data.copy()
 
     # Aggregate and convert to Wh

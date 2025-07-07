@@ -18,18 +18,18 @@ data_path = config[env]['data_path']
 models_dir = str(config['Data']['models_dir'])
 model_file = str(config['Data']['model_file'])
 inferred_data_dir = 'inferred_data'  # new folder inside data_path for inference output
-# infer_data_file = str(config['Data']['daily_data_file'])
-infer_data_file = 'mqtt_data_daily.parquet'  # file to read for inference, can be changed to any other file
+infer_data_file = str(config['Data']['daily_data_file'])
 column_names_file = str(config['Data']['training_dataset_columns_file'])
 scalers_dir = str(config['Data']['scalers_dir'])
+target_scalers_dir = str(config['Data']['target_scalers_dir'])
 input_scaler_file = str(config['Data']['input_scaler_file'])
 target_scalers_file = str(config['Data']['target_scalers_file'])
 batch_size = int(config['Inference']['batch_size'])
 
 model_path = os.path.join(data_path, models_dir)
 infer_data_path = os.path.join(data_path, infer_data_file)
-input_scaler_path = os.path.join(data_path, input_scaler_file)
-target_scalers_path = os.path.join(data_path, scalers_dir)
+input_scaler_path = os.path.join(data_path, scalers_dir, input_scaler_file)
+target_scalers_path = os.path.join(data_path, target_scalers_dir, scalers_dir)
 inferred_data_path = os.path.join(data_path, inferred_data_dir)
 
 input_scaler = load(input_scaler_path)

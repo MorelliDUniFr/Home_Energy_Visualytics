@@ -16,11 +16,11 @@ for key, value in default_state.items():
     if key not in st.session_state:
         st.session_state[key] = value
 
-# --- Define pages ---
+# --- Define app_pages ---
 pg = st.navigation([
-    st.Page('01_time_period_consumption.py', title=t('page_1_sidebar_title')),
-    st.Page('02_compare_with_previous_period.py', title=t('page_2_sidebar_title')),
-    st.Page('03_analyze_data.py', title=t('page_3_sidebar_title')),
+    st.Page('app_pages/01_time_period_consumption.py', title=t('page_1_sidebar_title')),
+    st.Page('app_pages/02_compare_with_previous_period.py', title=t('page_2_sidebar_title')),
+    st.Page('app_pages/03_analyze_data.py', title=t('page_3_sidebar_title')),
 ])
 
 # --- Page config ---

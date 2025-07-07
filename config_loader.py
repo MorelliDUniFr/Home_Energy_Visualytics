@@ -53,7 +53,7 @@ def validate_config(config):
         'ML': ['path', 'max_epochs', 'patience', 'batch_size'],
         'MQTT': ['broker', 'port', 'topic', 'transfer_timestamp'],
         'Inference': ['inference_timestamp', 'batch_size'],
-        'Data': ['models_dir', 'scalers_dir', 'training_dataset_file', 'training_dataset_columns_file', 'model_file', 'input_scaler_file', 'target_scalers_file', 'daily_data_file', 'whole_data_file', 'inferred_data_file', 'infer_data_file', 'demo_dataset_ground_truth_file', 'appliances_colors_file']
+        'Data': ['models_dir', 'scalers_dir', 'training_dataset_file', 'training_dataset_columns_file', 'model_file', 'input_scaler_file', 'target_scalers_file', 'daily_data_file', 'inferred_data_file', 'infer_data_file', 'demo_dataset_ground_truth_file', 'appliances_colors_file']
     }
 
     for section, keys in required_keys.items():
@@ -182,11 +182,6 @@ def validate_config(config):
     if not daily_data_file.endswith('.parquet'):
         logger.error(f'"daily_data_file" must be a .parquet file, got: {daily_data_file}')
 
-    # Ensure that the whole data file is a parquet file
-    whole_data_file = config['Data']['whole_data_file']
-    if not whole_data_file.endswith('.parquet'):
-        logger.error(f'"whole_data_file" must be a .parquet file, got: {whole_data_file}')
-
     # Ensure that the inferred data file is a parquet file
     inferred_data_file = config['Data']['inferred_data_file']
     if not inferred_data_file.endswith('.parquet'):
@@ -216,3 +211,8 @@ def validate_config(config):
     translations_file = config['Data']['translations_file']
     if not translations_file.endswith('.json'):
         logger.error(f'"translations_file" must be a .json file, got: {translations_file}')
+
+    # Ensure that the annotations file is a JSON file
+    annotations_file = config['Data']['annotations_file']
+    if not annotations_file.endswith('.json'):
+        logger.error(f'"annotations_file" must be a .json file, got: {annotations_file}')

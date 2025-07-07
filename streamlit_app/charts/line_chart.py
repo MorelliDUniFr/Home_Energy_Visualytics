@@ -8,13 +8,15 @@ from utils.filters import time_filter
 from utils.appliances import appliance_order, rgb_to_rgba
 
 def plot_line_chart(f_data, t_filter):
+    print(t_filter)
+    print(f_data)
     required_columns = ['appliance', 'value', 'timestamp']
     if not all(col in f_data.columns for col in required_columns):
         st.warning(f'Data must contain the following columns: {', '.join(required_columns)}.')
 
     f_data['timestamp'] = pd.to_datetime(f_data['timestamp'])
 
-    f_data['energy_Wh'] = f_data['value'] * (10 / 3600) # added
+    f_data['energy_Wh'] = f_data['value'] * (10 / 3600)
     floor_period = time_filter[t_filter]['floor_period']
     f_data['agg_time'] = f_data['timestamp'].dt.floor(floor_period)
 
@@ -23,7 +25,7 @@ def plot_line_chart(f_data, t_filter):
         .groupby(['agg_time', 'appliance'], as_index=False)
         .agg({'energy_Wh': 'sum'})
     )
-    f_data = f_data.rename(columns={'energy_Wh': 'value'}) # added
+    f_data = f_data.rename(columns={'energy_Wh': 'value'})
 
     f_data['formatted_value'] = f_data['value'].apply(format_value, args=('Wh',))
 

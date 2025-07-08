@@ -7,7 +7,7 @@ from utils.filters import time_filter
 from utils.formatting import format_value
 from utils.appliances import appliance_order
 import streamlit as st
-
+from utils.session_state_utils import store_value, load_value
 
 
 def plot_percentage_bar_chart(f_data_1, f_data_2, colors, time_period):
@@ -51,25 +51,20 @@ def plot_percentage_bar_chart(f_data_1, f_data_2, colors, time_period):
         "relative": t('relative_consumption') + " (%)"
     }
 
-    if "v_bar_chart" not in st.session_state or st.session_state.v_bar_chart not in options:
-        st.session_state.v_bar_chart = "actual"  # default internal key
+    load_value('v_bar_chart', default='actual')
 
-    keys = list(options.keys())
-    labels = list(options.values())
+    def get_label(option_key):
+        return options[option_key]
 
-    default_index = keys.index(st.session_state.v_bar_chart)
-
-    selected_label = st.radio(
-        f"{t('display_mode')}:", labels,
+    st.radio(
+        label=f"{t('display_mode')}:",
+        options=list(options.keys()),
+        format_func=get_label,
         horizontal=True,
-        index=default_index
+        key='_v_bar_chart',
+        on_change=store_value,
+        args=('v_bar_chart',),
     )
-
-    label_to_key = {v: k for k, v in options.items()}
-    st.session_state.v_bar_chart = label_to_key[selected_label]
-
-    # Now, internally, use st.session_state.v_bar_chart ("actual" or "relative")
-    view_mode = st.session_state.v_bar_chart
 
     # Group and calculate Wh
     sample_interval = 10  # seconds
@@ -78,7 +73,7 @@ def plot_percentage_bar_chart(f_data_1, f_data_2, colors, time_period):
     grouped['value'] *= sample_interval / 3_600  # to Wh
     grouped["formatted_value"] = grouped["value"].apply(format_value, unit="Wh")
 
-    if view_mode == "relative":
+    if st.session_state.v_bar_chart == "relative":
         # Normalize each appliance's value relative to its maximum across both days
         grouped['percentage'] = grouped.groupby('appliance', observed=False)['value'].transform(
             lambda x: 100 * x / x.max())

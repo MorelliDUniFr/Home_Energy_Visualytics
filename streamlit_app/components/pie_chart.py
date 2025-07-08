@@ -43,7 +43,7 @@ def plot_pie_chart(f_data, column, chart_key, colors):
     fig_pie = px.pie(
         names=translated_names,
         values=appliances_consumption.values,
-        title=f"{t('appliance_distribution')} ({t('total_consumption')}: {format_value(appliances_consumption.sum(), 'Wh')})",
+        title=f"{t('appliance_distribution')}",
         color=translated_names,
         color_discrete_map={translate_appliance_name(name): colors[name] for name in appliances_consumption.index},
         category_orders={"names": translated_names},

@@ -1,29 +1,33 @@
-from charts.pie_chart import plot_pie_chart
-from charts.line_chart import plot_line_chart
-from charts.horizontal_bar_chart import plot_horizontal_bar_chart
+from components.pie_chart import plot_pie_chart
+from components.line_chart import plot_line_chart
+from components.horizontal_bar_chart import plot_horizontal_bar_chart
 from utils.translations import t
 from babel.dates import format_date
 from datetime import datetime
 import streamlit as st
 from utils.session_state_utils import load_value, store_value
-from utils.config_utils import inferred_dataset_path, DATE_FORMAT
+from utils.config_utils import inferred_dataset_path, DATE_FORMAT, consumption_cost
 from utils.partition_utils import get_available_years, get_available_months_for_year
 from utils.data_loader import get_earliest_date, load_and_filter_data_by_time
 import pandas as pd
 from utils.filters import time_filter
 from utils.appliances import appliance_colors
 from utils.annotations import load_annotations, save_annotations, add_annotation, get_grouped_annotations, delete_annotation
+from utils.formatting import format_value
+from components.metrics import display_consumption_metrics
+from utils.consumption import compute_total_consumption
 
-st.title(t('page_1_title'))
+st.title(body=t('page_1_title'), anchor=False)
 
-c1, c2, c3, _ = st.columns([1.33, 1.33, 1.33, 6])
+c1, c2, c3, _, text_column1, text_column2, _ = st.columns([1.33, 1.33, 1.33, 1.5, 1.5, 1.5, 1.5])
+text_column = [text_column1, text_column2]
 
 with st.container():
     with c1:
         load_value("time_period", default='Day')
         translated_labels = {key: t(key.lower()) for key in time_filter}
         label_options = list(translated_labels.keys())
-        selected_label = st.selectbox(
+        st.selectbox(
             t('select_time_period'),
             options=label_options,
             format_func=lambda x: translated_labels[x],
@@ -34,9 +38,6 @@ with st.container():
 
         # Use partition-aware available years:
         available_years = get_available_years(dataset_path=inferred_dataset_path)
-
-    if '_time_period' in st.session_state:
-        st.session_state['time_period'] = st.session_state['_time_period']
 
     # === Day or Week Selection ===
     if st.session_state.time_period in ['Day', 'Week']:
@@ -78,9 +79,6 @@ with st.container():
                 args=('selected_year_1',)
             )
 
-            if '_selected_year_1' in st.session_state:
-                st.session_state.selected_year_1 = st.session_state['_selected_year_1']
-
     # === Month Selection ===
     elif st.session_state.time_period == 'Month':
         load_value('selected_year_1',
@@ -94,9 +92,6 @@ with st.container():
                 on_change=store_value,
                 args=('selected_year_1',)
             )
-
-            if '_selected_year_1' in st.session_state:
-                st.session_state.selected_year_1 = st.session_state['_selected_year_1']
 
         # Use partition-aware months retrieval:
         available_months = get_available_months_for_year(
@@ -123,13 +118,6 @@ with st.container():
                 args=('selected_month_1',)
             )
 
-            if '_selected_month_1' in st.session_state:
-                st.session_state.selected_month_1 = st.session_state['_selected_month_1']
-
-        st.session_state.selected_date_1 = pd.to_datetime(
-            f'{st.session_state.selected_year_1}-{st.session_state.selected_month_1}-01'
-        ).date()
-
 # === Load filtered data partitions ===
 filtered_date_1, filtered_data = load_and_filter_data_by_time(
     inferred_dataset_path,
@@ -149,7 +137,7 @@ with c11:
         "pie_chart": t('pie_chart')
     }
 
-    st.session_state.chart_type = st.session_state.chart_type or 'bar_chart'
+    load_value('chart_type', default='bar_chart')
 
     def get_label(chart_key):
         return chart_options[chart_key]
@@ -159,7 +147,9 @@ with c11:
         options=list(chart_options.keys()),
         format_func=get_label,
         horizontal=True,
-        key='chart_type'
+        key='_chart_type',
+        on_change=store_value,
+        args=('chart_type',)
     )
 
     if st.session_state.chart_type == 'bar_chart':
@@ -168,6 +158,23 @@ with c11:
         plot_pie_chart(filtered_data, c11, 'pie_chart', colors=appliance_colors)
 
 with c12:
+    view_mode_options = {
+        'individual': t('individual'),
+        'cumulative': t('cumulative')
+    }
+
+    load_value('line_type', 'individual')
+
+    st.radio(
+        f"{t('display_mode')}:",
+        options=list(view_mode_options.keys()),  # internal keys: ['individual', 'cumulative']
+        format_func=lambda x: view_mode_options[x],  # show translated label
+        horizontal=True,
+        key='_line_type',
+        on_change=store_value,
+        args=('line_type',)
+    )
+
     plot_line_chart(filtered_data, t_filter=st.session_state.time_period)
 
 st.divider()
@@ -261,3 +268,6 @@ if selected_date:
 
     if not any_found:
         st.info(t("no_annotations_found"))
+
+    compute_total_consumption(filtered_data)
+    display_consumption_metrics(cols=text_column, key_suffix='_1')

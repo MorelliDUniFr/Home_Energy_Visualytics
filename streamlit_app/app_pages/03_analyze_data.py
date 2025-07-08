@@ -13,7 +13,7 @@ from utils.data_loader import load_data_by_date_range
 from utils.config_utils import inferred_dataset_path, DATE_FORMAT, data_path, models_dir, scalers_dir, model_file, target_scalers_file, color_palette, appliances_colors_file, target_scalers_dir
 import os
 
-st.title(t('page_3_title'))
+st.title(body=t('page_3_title'), anchor=False)
 
 earliest_date = get_earliest_date(inferred_dataset_path)
 

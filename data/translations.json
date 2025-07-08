@@ -341,11 +341,23 @@
     "fr": "Énergie",
     "de": "Energie"
   },
-  "not_enough_data_to_compare": {
+  "not_enough_years_to_compare": {
     "en": "There are not enough available years to compare",
     "it": "Non ci sono abbastanza anni da comparare",
     "fr": "Il n'y a pas assez d'années disponibles pour comparer",
     "de": "Es sind nicht genügend Jahre zum Vergleichen verfügbar"
+  },
+  "not_enough_months_to_compare": {
+    "en": "There are not enough available months to compare",
+    "it": "Non ci sono abbastanza mesi da comparare",
+    "fr": "Il n'y a pas assez de mois disponibles pour comparer",
+    "de": "Es sind nicht genügend Monate zum Vergleichen verfügbar"
+  },
+  "not_enough_days_to_compare": {
+      "en": "There are not enough available days to compare",
+      "it": "Non ci sono abbastanza giorni da comparare",
+      "fr": "Il n'y a pas assez de jours disponibles pour comparer",
+      "de": "Es sind nicht genügend Tage zum Vergleichen verfügbar"
   },
   "annotation_saved": {
     "en": "Annotation saved successfully",
@@ -382,5 +394,11 @@
     "it": "Elimina Annotazione",
     "fr": "Supprimer l'Annotation",
     "de": "Anmerkung löschen"
+  },
+  "total_cost": {
+    "en": "Total Cost",
+    "it": "Costo Totale",
+    "fr": "Coût Total",
+    "de": "Gesamtkosten"
   }
 }

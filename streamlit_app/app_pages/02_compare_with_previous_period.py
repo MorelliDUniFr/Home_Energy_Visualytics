@@ -1,6 +1,6 @@
 import streamlit as st
-from charts.pie_chart import plot_pie_chart
-from charts.percentage_bar_chart import plot_percentage_bar_chart
+from components.pie_chart import plot_pie_chart
+from components.percentage_bar_chart import plot_percentage_bar_chart
 from utils.translations import t
 from babel.dates import format_date
 from datetime import datetime, timedelta
@@ -11,38 +11,9 @@ from utils.partition_utils import get_available_years, get_available_months_for_
 import pandas as pd
 from utils.appliances import appliance_colors
 from utils.config_utils import inferred_dataset_path, DATE_FORMAT
-from charts.horizontal_bar_chart import plot_horizontal_bar_chart
-
-st.title(t('page_2_title'))
-
-c1, _ = st.columns([2, 8])
-c11, c12 = st.columns([1, 1], border=True)
-
-with st.container():
-    with c1:
-        load_value("time_period", default='Day')
-        if st.session_state.time_period == 'Week':
-            st.session_state['_time_period'] = 'Day'
-            st.session_state['time_period'] = 'Day'
-
-        excluded_option = "Week"
-        filtered_time_options = [key for key in time_filter.keys() if key != excluded_option]
-
-        translated_time_options = {
-            key: t(key.lower()) for key in filtered_time_options
-        }
-
-        selected_label = st.selectbox(
-            t("select_time_period"),
-            options=filtered_time_options,
-            format_func=lambda x: translated_time_options[x],
-            key='_time_period',
-            on_change=store_value,
-            args=('time_period',)
-        )
-
-    if '_time_period' in st.session_state:
-        st.session_state['time_period'] = st.session_state['_time_period']
+from components.horizontal_bar_chart import plot_horizontal_bar_chart
+from components.metrics import display_consumption_metrics
+from utils.consumption import compute_total_consumptions
 
 def select_and_filter_data(side_suffix: str, container_col):
     selected_date_key = f'selected_date{side_suffix}'
@@ -57,7 +28,10 @@ def select_and_filter_data(side_suffix: str, container_col):
 
     with container_col:
         if st.session_state.time_period == "Day":
-            with st.columns([1, 1, 1], gap="small")[1]:
+            col_selector, _, col_metric1, col_metric2 = st.columns([1, 0.1, 0.95, 0.95], gap="small")
+            col_metrics = [col_metric1, col_metric2]
+
+            with col_selector:
                 temp_key = f"_{selected_date_key}"
                 if selected_date_key in st.session_state:
                     st.session_state[temp_key] = st.session_state[selected_date_key]
@@ -87,7 +61,8 @@ def select_and_filter_data(side_suffix: str, container_col):
             available_years = get_available_years(inferred_dataset_path)
             index_sel_year, index_sel_month = find_sel_indexes(available_years, st.session_state.get(selected_year_key), inferred_dataset_path)
 
-            _, col_month, col_year, _ = st.columns([1, 1, 1, 1], gap="small")
+            col_month, col_year, col_metric1, col_metric2 = st.columns([1, 1, 1, 1], gap="small")
+            col_metrics = [col_metric1, col_metric2]
 
             with col_year:
                 if st.session_state.get(selected_year_key) is None:
@@ -156,7 +131,9 @@ def select_and_filter_data(side_suffix: str, container_col):
                 st.warning(t("not_enough_data_to_compare"))
                 st.stop()
             else:
-                with st.columns([1, 1, 1], gap="small")[1]:
+                col_selector, _, col_metric1, col_metric2 = st.columns([1, 0.1, 0.95, 0.95], gap="small")
+                col_metrics = [col_metric1, col_metric2]
+                with col_selector:
                     load_value(selected_year_key, default=available_years[-1])
                     st.selectbox(
                         t('select_year'),
@@ -179,31 +156,83 @@ def select_and_filter_data(side_suffix: str, container_col):
                     )
                     filtered_data = filter_appliances_with_nonzero_sum(filtered_data)
 
-        return selected_date, filtered_data
+        return selected_date, filtered_data, col_metrics
 
-filtered_date_1, filtered_data_1 = select_and_filter_data('_1', c11)
-if st.session_state.chart_type == 'bar_chart':
-    with c11:
-        plot_horizontal_bar_chart(filtered_data_1, colors=appliance_colors, chart_key='horizontal_bar_chart1')
-else:
-    plot_pie_chart(filtered_data_1, c11, 'pie_chart1', colors=appliance_colors)
+st.title(body=t('page_2_title'), anchor=False)
+
+c1, _ = st.columns([1.33, 8.66])
 
 
-filtered_date_2, filtered_data_2 = select_and_filter_data('_2', c12)
-if st.session_state.chart_type == 'bar_chart':
-    with c12:
-        plot_horizontal_bar_chart(filtered_data_2, colors=appliance_colors, chart_key='horizontal_bar_chart2')
-else:
-    plot_pie_chart(filtered_data_2, c12, 'pie_chart2', colors=appliance_colors)
+with st.container():
+    with c1:
+        load_value("time_period", default='Day')
+        if st.session_state.time_period == 'Week':
+            st.session_state['_time_period'] = 'Day'
+            st.session_state['time_period'] = 'Day'
 
-with st.container(border=True):
-    if filtered_data_1.empty or filtered_data_2.empty:
-        st.stop()
-    else:
-        plot_percentage_bar_chart(
-            filtered_data_1,
-            filtered_data_2,
-            colors=appliance_colors,
-            time_period=st.session_state.time_period
+        excluded_option = "Week"
+        filtered_time_options = [key for key in time_filter.keys() if key != excluded_option]
+
+        translated_time_options = {
+            key: t(key.lower()) for key in filtered_time_options
+        }
+
+        selected_label = st.selectbox(
+            t("select_time_period"),
+            options=filtered_time_options,
+            format_func=lambda x: translated_time_options[x],
+            key='_time_period',
+            on_change=store_value,
+            args=('time_period',),
         )
 
+    if st.session_state.time_period == "Year":
+        available_years = get_available_years(inferred_dataset_path)
+        if len(available_years) <= 1:
+            st.warning(t("not_enough_years_to_compare"))
+            st.stop()
+    if st.session_state.time_period == "Month":
+        [available_year] = get_available_years(inferred_dataset_path)
+        available_months = get_available_months_for_year(inferred_dataset_path, available_year)
+        if len(available_months) <= 1:
+            st.warning(t("not_enough_months_to_compare"))
+            st.stop()
+    if st.session_state.time_period == "Day" or st.session_state.time_period == "Week":
+        earliest_date = get_earliest_date(inferred_dataset_path)
+        max_date = time_filter[st.session_state.time_period]['max_value']
+        if max_date == earliest_date:
+            st.warning(t("not_enough_days_to_compare"))
+            st.stop()
+
+    c11, c12 = st.columns([1, 1], border=True)
+
+    filtered_date_1, filtered_data_1, col_metrics1 = select_and_filter_data('_1', c11)
+    load_value('chart_type', default='bar_chart')
+    if st.session_state.chart_type == 'bar_chart':
+        with c11:
+            plot_horizontal_bar_chart(filtered_data_1, colors=appliance_colors, chart_key='horizontal_bar_chart1')
+    else:
+        plot_pie_chart(filtered_data_1, c11, 'pie_chart1', colors=appliance_colors)
+
+    filtered_date_2, filtered_data_2, col_metrics2 = select_and_filter_data('_2', c12)
+
+    compute_total_consumptions(filtered_data_1, filtered_data_2)
+    display_consumption_metrics(col_metrics1, key_suffix='_1', is_comparison=True)
+    display_consumption_metrics(col_metrics2, key_suffix='_2', is_comparison=True)
+
+    if st.session_state.chart_type == 'bar_chart':
+        with c12:
+            plot_horizontal_bar_chart(filtered_data_2, colors=appliance_colors, chart_key='horizontal_bar_chart2')
+    else:
+        plot_pie_chart(filtered_data_2, c12, 'pie_chart2', colors=appliance_colors)
+
+    with st.container(border=True):
+        if filtered_data_1.empty or filtered_data_2.empty:
+            st.stop()
+        else:
+            plot_percentage_bar_chart(
+                filtered_data_1,
+                filtered_data_2,
+                colors=appliance_colors,
+                time_period=st.session_state.time_period
+            )

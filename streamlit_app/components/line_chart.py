@@ -6,10 +6,10 @@ from utils.formatting import format_value
 from utils.appliances import appliance_colors
 from utils.filters import time_filter
 from utils.appliances import appliance_order, rgb_to_rgba
+from utils.session_state_utils import load_value, store_value
+
 
 def plot_line_chart(f_data, t_filter):
-    print(t_filter)
-    print(f_data)
     required_columns = ['appliance', 'value', 'timestamp']
     if not all(col in f_data.columns for col in required_columns):
         st.warning(f'Data must contain the following columns: {', '.join(required_columns)}.')
@@ -30,22 +30,6 @@ def plot_line_chart(f_data, t_filter):
     f_data['formatted_value'] = f_data['value'].apply(format_value, args=('Wh',))
 
     f_data['translated_appliance'] = f_data['appliance'].apply(translate_appliance_name)
-
-    view_mode_options = {
-        'individual': t('individual'),
-        'cumulative': t('cumulative')
-    }
-
-    # Ensure default is set
-    st.session_state.line_type = st.session_state.line_type or 'individual'
-
-    st.radio(
-        f"{t('display_mode')}:",
-        options=list(view_mode_options.keys()),  # internal keys: ['individual', 'cumulative']
-        format_func=lambda x: view_mode_options[x],  # show translated label
-        horizontal=True,
-        key='line_type'  # stored directly in session_state
-    )
 
     if st.session_state.line_type == 'cumulative':
         legend_order = appliance_order[::-1]

@@ -5,11 +5,10 @@ from utils.translations import t, languages
 # --- Set default session state values ---
 default_state = {
     "lang": "en",
-    "v_bar_chart": 'actual',
-    "chart_type": 'bar_chart',
-    "line_type": 'individual',
     "selected_columns": [],
     "selected_appliances": [],
+    "consumption_time_period_1": 0,
+    "consumption_time_period_2": 0,
 }
 
 for key, value in default_state.items():

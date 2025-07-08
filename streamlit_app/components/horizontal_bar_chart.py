@@ -41,7 +41,7 @@ def plot_horizontal_bar_chart(data, colors, chart_key):
         color="translated_appliance",
         color_discrete_map={translate_appliance_name(name): colors[name] for name in totals["appliance"]},
         labels={"percentage": "Percentage", "translated_appliance": t('appliances')},
-        title=f"{t('appliance_distribution')} ({t('total_consumption')}: {format_value(total, 'Wh')})",
+        title=f"{t('appliance_distribution')}",
     )
 
     # Add subtle vertical guide lines every 10%

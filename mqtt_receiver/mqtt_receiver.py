@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import threading
 from config_loader import load_config, logger
 import shutil
+from diskcache import Cache
 
 config, config_dir = load_config()
 
@@ -20,6 +21,8 @@ topic = config['MQTT']['topic']
 transfer_timestamp = config['MQTT']['transfer_timestamp']
 daily_data_file = str(config['Data']['daily_data_file'])
 whole_data_dir = str(config['Data']['whole_data_dir'])
+
+cache = Cache(os.path.join(data_path, "diskcache"))
 
 # Calculate reset time (one minute after transfer time)
 transfer_time = datetime.strptime(transfer_timestamp, "%H:%M")
@@ -120,6 +123,12 @@ def on_message(client, userdata, msg):
             new_data.rename(columns={'Time': 'timestamp'}, inplace=True)
 
         buffer.append(new_data)
+
+        # Live metric extraction
+        metrics = ['P1i', 'P2i', 'P3i']
+        if all(metric in new_data.columns for metric in metrics):
+            latest_value = float(new_data.loc[0, metrics].sum())
+            cache.set('live_power', latest_value)
 
         # Flush buffer if it reaches 60 entries (about 10 minutes if messages every 10s)
         if len(buffer) >= 60:

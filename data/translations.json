@@ -400,5 +400,17 @@
     "it": "Costo Totale",
     "fr": "Coût Total",
     "de": "Gesamtkosten"
+  },
+  "tariff": {
+    "en": "Tariff",
+    "it": "Tariffa",
+    "fr": "Tarif",
+    "de": "Tarif"
+  },
+  "total_live_power": {
+    "en": "Total Live Power",
+    "it": "Potenza Attiva Totale",
+    "fr": "Puissance Active Totale",
+    "de": "Gesamtwirkleistung"
   }
 }

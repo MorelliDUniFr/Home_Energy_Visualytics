@@ -1,3 +1,5 @@
+import os.path
+
 from components.pie_chart import plot_pie_chart
 from components.line_chart import plot_line_chart
 from components.horizontal_bar_chart import plot_horizontal_bar_chart
@@ -6,7 +8,7 @@ from babel.dates import format_date
 from datetime import datetime
 import streamlit as st
 from utils.session_state_utils import load_value, store_value
-from utils.config_utils import inferred_dataset_path, DATE_FORMAT, consumption_cost
+from utils.config_utils import inferred_dataset_path, DATE_FORMAT, data_path
 from utils.partition_utils import get_available_years, get_available_months_for_year
 from utils.data_loader import get_earliest_date, load_and_filter_data_by_time
 from utils.filters import time_filter
@@ -20,11 +22,18 @@ from utils.data_loader import load_inferred_data_partitioned
 from utils.filters import filter_appliances_with_nonzero_sum
 import pandas as pd
 from components.annotations import plot_annotations
+from utils.consumption import compute_total_consumption_and_cost
+from diskcache import Cache
+from streamlit_autorefresh import st_autorefresh
+
+cache = Cache(os.path.join(data_path, 'diskcache'))
+st_autorefresh(interval=10000, key="data_refresh")
+value = cache.get("live_power")
 
 st.title(body=t('page_1_title'), anchor=False)
 
-c1, c2, c3, _, text_column1, text_column2, _ = st.columns([1.33, 1.33, 1.33, 1.5, 1.5, 1.5, 1.5])
-text_column = [text_column1, text_column2]
+c1, c2, c3, _, text_column1, text_column2, text_column3 = st.columns([1.33, 1.33, 1.33, 1.5, 1.5, 1.5, 1.5])
+text_column = [text_column1, text_column2, text_column3]
 
 with st.container():
     with c1:
@@ -213,5 +222,5 @@ st.divider()
 
 plot_annotations()
 
-compute_total_consumption(filtered_data)
-display_consumption_metrics(cols=text_column, key_suffix='_1')
+compute_total_consumption_and_cost(filtered_data, tariff_name=st.session_state.selected_tariff, suffix='_1')
+display_consumption_metrics(cols=text_column, key_suffix='_1', live_value=value)

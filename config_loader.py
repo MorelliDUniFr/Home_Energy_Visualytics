@@ -54,7 +54,6 @@ def validate_config(config):
         'MQTT': ['broker', 'port', 'topic', 'transfer_timestamp'],
         'Inference': ['inference_timestamp', 'batch_size'],
         'Data': ['models_dir', 'scalers_dir', 'training_dataset_file', 'training_dataset_columns_file', 'model_file', 'input_scaler_file', 'target_scalers_file', 'daily_data_file', 'inferred_data_file', 'infer_data_file', 'demo_dataset_ground_truth_file', 'appliances_colors_file'],
-        'Dashboard': ['consumption_cost']
     }
 
     for section, keys in required_keys.items():
@@ -217,13 +216,3 @@ def validate_config(config):
     annotations_file = config['Data']['annotations_file']
     if not annotations_file.endswith('.json'):
         logger.error(f'"annotations_file" must be a .json file, got: {annotations_file}')
-
-    # Ensure that the consumption cost is a valid float
-    consumption_cost_str = config['Dashboard']['consumption_cost']
-    try:
-        consumption_cost = float(consumption_cost_str)
-    except ValueError:
-        logger.error('Invalid consumption cost: must be a float')
-    else:
-        if consumption_cost < 0:
-            logger.error('consumption_cost must be a non-negative float')

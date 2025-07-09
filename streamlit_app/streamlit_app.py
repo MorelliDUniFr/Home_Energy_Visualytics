@@ -1,15 +1,18 @@
 import streamlit as st
+
+from utils.session_state_utils import store_value, load_value
 from utils.translations import t, languages
 
 
 # --- Set default session state values ---
 default_state = {
-    "lang": "en",
     "selected_columns": [],
     "selected_appliances": [],
     "consumption_time_period_1": 0,
     "consumption_time_period_2": 0,
 }
+load_value("selected_tariff", "simple")
+load_value("lang", "en")
 
 for key, value in default_state.items():
     if key not in st.session_state:
@@ -28,18 +31,32 @@ st.set_page_config(
     layout='wide',
 )
 
+tariff_labels = {
+    "simple": "Simple",
+    "duo": "Duo ",
+    "chrono": "Chrono"
+}
+
 # --- Sidebar language selector ---
 with st.sidebar:
+    selected_tariff = st.pills(
+        label=t("tariff"),
+        options=["simple", "duo", "chrono"],
+        selection_mode="single",
+        format_func=lambda code: tariff_labels[code],
+        key="_selected_tariff",
+        on_change=store_value,
+        args=("selected_tariff",),
+    )
+
     selected_lang = st.selectbox(
         label="🌐 " + t("select_language"),
         options=list(languages.keys()),
         format_func=lambda code: languages[code],
-        index=list(languages).index(st.session_state.lang),
+        key="_lang",
+        on_change=store_value,
+        args=("lang",),
     )
-
-    if selected_lang != st.session_state.lang:
-        st.session_state.lang = selected_lang
-        st.rerun()
 
 # --- Run selected page ---
 pg.run()

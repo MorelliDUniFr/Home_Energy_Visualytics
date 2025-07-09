@@ -13,7 +13,6 @@ model_file = str(config['Data']['model_file'])
 target_scalers_file = str(config['Data']['target_scalers_file'])
 inferred_dir = str(config['Data']['inferred_dir'])
 annotations_file = str(config['Data']['annotations_file'])
-consumption_cost = float(config['Dashboard']['consumption_cost'])
 
 inferred_dataset_path = os.path.join(data_path, inferred_dir)
 annotations_path = os.path.join(data_path, annotations_file)

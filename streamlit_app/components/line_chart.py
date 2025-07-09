@@ -12,7 +12,7 @@ from utils.session_state_utils import load_value, store_value
 def plot_line_chart(f_data, t_filter):
     required_columns = ['appliance', 'value', 'timestamp']
     if not all(col in f_data.columns for col in required_columns):
-        st.warning(f'Data must contain the following columns: {', '.join(required_columns)}.')
+        st.warning(f'Data must contain the following columns: {', '.join(required_columns)}.', icon='ℹ️')
 
     f_data['timestamp'] = pd.to_datetime(f_data['timestamp'])
 

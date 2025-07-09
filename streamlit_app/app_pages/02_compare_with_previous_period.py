@@ -28,7 +28,7 @@ def select_and_filter_data(side_suffix: str, container_col):
 
     with container_col:
         if st.session_state.time_period == "Day":
-            col_selector, _, col_metric1, col_metric2 = st.columns([1, 0.1, 0.95, 0.95], gap="small")
+            col_selector, _, col_metric1, col_metric2 = st.columns([0.8, 0.1, 1.05, 1.05], gap="small")
             col_metrics = [col_metric1, col_metric2]
 
             with col_selector:
@@ -61,7 +61,7 @@ def select_and_filter_data(side_suffix: str, container_col):
             available_years = get_available_years(inferred_dataset_path)
             index_sel_year, index_sel_month = find_sel_indexes(available_years, st.session_state.get(selected_year_key), inferred_dataset_path)
 
-            col_month, col_year, col_metric1, col_metric2 = st.columns([1, 1, 1, 1], gap="small")
+            col_month, col_year, col_metric1, col_metric2 = st.columns([0.8, 0.8, 1.2, 1.2], gap="small")
             col_metrics = [col_metric1, col_metric2]
 
             with col_year:
@@ -116,7 +116,7 @@ def select_and_filter_data(side_suffix: str, container_col):
                 selected_month = st.session_state[persistent_month_key]
 
             selected_date = pd.to_datetime(f"{selected_year}-{selected_month}-01").date()
-            end_date = selected_date + timedelta(days=29)
+            end_date = selected_date + pd.offsets.MonthEnd(0)
             filtered_data = load_inferred_data_partitioned(
                 inferred_dataset_path,
                 selected_date.strftime("%Y-%m-%d"),
@@ -128,10 +128,10 @@ def select_and_filter_data(side_suffix: str, container_col):
         elif st.session_state.time_period == "Year":
             available_years = get_available_years(inferred_dataset_path)
             if len(available_years) == 1:
-                st.warning(t("not_enough_data_to_compare"))
+                st.warning(t("not_enough_data_to_compare"), icon='ℹ️')
                 st.stop()
             else:
-                col_selector, _, col_metric1, col_metric2 = st.columns([1, 0.1, 0.95, 0.95], gap="small")
+                col_selector, _, col_metric1, col_metric2 = st.columns([0.8, 0.1, 1.05, 1.05], gap="small")
                 col_metrics = [col_metric1, col_metric2]
                 with col_selector:
                     load_value(selected_year_key, default=available_years[-1])
@@ -143,16 +143,15 @@ def select_and_filter_data(side_suffix: str, container_col):
                         on_change=store_value,
                         args=(selected_year_key,)
                     )
-                    st.session_state[selected_year_key] = st.session_state[f"_{selected_year_key}"]
-                    selected_year = st.session_state[selected_year_key]
 
-                    selected_date = pd.to_datetime(f"{selected_year}-01-01").date()
-                    end_date = pd.to_datetime(f"{selected_year}-12-31").date()
+                    selected_date = pd.to_datetime(f"{st.session_state.selected_year_1}-01-01").date()
+                    end_date = pd.to_datetime(f"{st.session_state.selected_year_1}-12-31").date()
 
                     filtered_data = load_inferred_data_partitioned(
                         inferred_dataset_path,
                         selected_date.strftime("%Y-%m-%d"),
-                        end_date.strftime("%Y-%m-%d")
+                        end_date.strftime("%Y-%m-%d"),
+                        fingerprint=get_dataset_fingerprint(inferred_dataset_path)
                     )
                     filtered_data = filter_appliances_with_nonzero_sum(filtered_data)
 
@@ -189,19 +188,19 @@ with st.container():
     if st.session_state.time_period == "Year":
         available_years = get_available_years(inferred_dataset_path)
         if len(available_years) <= 1:
-            st.warning(t("not_enough_years_to_compare"))
+            st.warning(t("not_enough_years_to_compare"), icon='ℹ️')
             st.stop()
     if st.session_state.time_period == "Month":
         [available_year] = get_available_years(inferred_dataset_path)
         available_months = get_available_months_for_year(inferred_dataset_path, available_year)
         if len(available_months) <= 1:
-            st.warning(t("not_enough_months_to_compare"))
+            st.warning(t("not_enough_months_to_compare"), icon='ℹ️')
             st.stop()
     if st.session_state.time_period == "Day" or st.session_state.time_period == "Week":
         earliest_date = get_earliest_date(inferred_dataset_path)
         max_date = time_filter[st.session_state.time_period]['max_value']
         if max_date == earliest_date:
-            st.warning(t("not_enough_days_to_compare"))
+            st.warning(t("not_enough_days_to_compare"), icon='ℹ️')
             st.stop()
 
     c11, c12 = st.columns([1, 1], border=True)

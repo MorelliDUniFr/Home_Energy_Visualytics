@@ -9,13 +9,17 @@ from utils.session_state_utils import load_value, store_value
 from utils.config_utils import inferred_dataset_path, DATE_FORMAT, consumption_cost
 from utils.partition_utils import get_available_years, get_available_months_for_year
 from utils.data_loader import get_earliest_date, load_and_filter_data_by_time
-import pandas as pd
 from utils.filters import time_filter
 from utils.appliances import appliance_colors
 from utils.annotations import load_annotations, save_annotations, add_annotation, get_grouped_annotations, delete_annotation
 from utils.formatting import format_value
 from components.metrics import display_consumption_metrics
 from utils.consumption import compute_total_consumption
+from utils.data_loader import get_dataset_fingerprint
+from utils.data_loader import load_inferred_data_partitioned
+from utils.filters import filter_appliances_with_nonzero_sum
+import pandas as pd
+from components.annotations import plot_annotations
 
 st.title(body=t('page_1_title'), anchor=False)
 
@@ -60,6 +64,20 @@ with st.container():
                 args=('selected_date_1',)
             )
 
+            if st.session_state.time_period == 'Day':
+                end_date = st.session_state.selected_date_1
+            else:
+                end_date = st.session_state.selected_date_1 + pd.Timedelta(days=6)
+
+            fingerprint = get_dataset_fingerprint(inferred_dataset_path)
+            filtered_data = load_inferred_data_partitioned(
+                inferred_dataset_path,
+                st.session_state.selected_date_1.strftime("%Y-%m-%d"),
+                end_date.strftime("%Y-%m-%d"),
+                fingerprint=fingerprint,
+            )
+            filtered_data = filter_appliances_with_nonzero_sum(filtered_data)
+
         if '_selected_date_1' in st.session_state:
             st.session_state.selected_date_1 = st.session_state['_selected_date_1']
             st.session_state.selected_year_1 = st.session_state.selected_date_1.year
@@ -78,6 +96,17 @@ with st.container():
                 on_change=store_value,
                 args=('selected_year_1',)
             )
+
+            selected_date = pd.to_datetime(f"{st.session_state.selected_year_1}-01-01").date()
+            end_date = pd.to_datetime(f"{st.session_state.selected_year_1}-12-31").date()
+
+            filtered_data = load_inferred_data_partitioned(
+                inferred_dataset_path,
+                selected_date.strftime("%Y-%m-%d"),
+                end_date.strftime("%Y-%m-%d"),
+                fingerprint=get_dataset_fingerprint(inferred_dataset_path)
+            )
+            filtered_data = filter_appliances_with_nonzero_sum(filtered_data)
 
     # === Month Selection ===
     elif st.session_state.time_period == 'Month':
@@ -118,12 +147,15 @@ with st.container():
                 args=('selected_month_1',)
             )
 
-# === Load filtered data partitions ===
-filtered_date_1, filtered_data = load_and_filter_data_by_time(
-    inferred_dataset_path,
-    st.session_state.time_period,
-    '_1'
-)
+            selected_date = pd.to_datetime(f"{st.session_state.selected_year_1}-{st.session_state.selected_month_1}-01").date()
+            end_date = selected_date + pd.offsets.MonthEnd(0)
+            filtered_data = load_inferred_data_partitioned(
+                inferred_dataset_path,
+                selected_date.strftime("%Y-%m-%d"),
+                end_date.strftime("%Y-%m-%d"),
+                fingerprint=get_dataset_fingerprint(inferred_dataset_path)
+            )
+            filtered_data = filter_appliances_with_nonzero_sum(filtered_data)
 
 if filtered_data.empty:
     st.warning(body=t('warning_message'), icon='ℹ️')
@@ -179,95 +211,7 @@ with c12:
 
 st.divider()
 
-# Load annotations
-annotations = load_annotations()
+plot_annotations()
 
-# Only initialize input once
-if "annotation_input" not in st.session_state:
-    st.session_state.annotation_input = ""
-
-# Input box
-st.text_area(
-    label=t('add_annotation'),
-    height=68,
-    max_chars=240,
-    key="annotation_input",
-    placeholder=t('annotation_placeholder'),
-)
-
-# Submission logic
-annotation_text = st.session_state.annotation_input
-if annotation_text.strip():
-    annotations = add_annotation(
-        annotations,
-        st.session_state.selected_date_1,
-        annotation_text,
-        st.session_state.time_period
-    )
-    save_annotations(annotations)
-    st.success(t('annotation_saved'))
-    st.session_state.pop("annotation_input", None)
-    st.rerun()
-
-# Display annotations
-selected_date = st.session_state.get("selected_date_1")
-if selected_date:
-    grouped_annotations = get_grouped_annotations(
-        annotations,
-        selected_date,
-        st.session_state.time_period,
-        st.session_state.lang
-    )
-
-    period_display_order = ["Year", "Month", "Week", "Day"]
-    any_found = False
-
-    for group in period_display_order:
-        entries = grouped_annotations.get(group, [])
-        if entries:
-            any_found = True
-
-            # Group entries by display label, keep date and text for each
-            grouped_by_label = {}
-            for date_obj, display_label, text in entries:
-                grouped_by_label.setdefault(display_label, []).append((date_obj, text))
-
-            for display_label, items in grouped_by_label.items():
-                with st.expander(display_label):
-                    for date_obj, text in items:
-                        period = group
-                        annotation_id = f"{hash((date_obj, text, period))}"
-
-                        col1, col2 = st.columns([0.95, 0.05], gap="small")
-
-                        with col1:
-                            st.markdown(
-                                f"""
-                                <div style="
-                                    background-color: #22222A;
-                                    border: 1px solid #3D3E43;
-                                    border-radius: 0.5em;
-                                    padding: 0 1em;
-                                    margin: 0em 0;
-                                    font-size: 0.92em;
-                                    height: 40px;
-                                    display: flex;
-                                    align-items: center;
-                                ">
-                                    {text}
-                                </div>
-                                """,
-                                unsafe_allow_html=True,
-                            )
-
-                        with col2:
-                            if st.button("🗑️", key=f"del_{annotation_id}", help=t('delete_annotation')):
-                                annotations = delete_annotation(annotations, date_obj, text, period)
-                                save_annotations(annotations)
-                                st.rerun()
-
-    if not any_found:
-        st.info(t("no_annotations_found"))
-
-    compute_total_consumption(filtered_data)
-    display_consumption_metrics(cols=text_column, key_suffix='_1')
+compute_total_consumption(filtered_data)
+display_consumption_metrics(cols=text_column, key_suffix='_1')

@@ -11,7 +11,7 @@ def plot_horizontal_bar_chart(data, colors, chart_key):
     """
 
     if data.empty:
-        st.warning(t('warning_message'))
+        st.warning(t('warning_message'), icon='ℹ️')
         return
 
     df = data.copy()

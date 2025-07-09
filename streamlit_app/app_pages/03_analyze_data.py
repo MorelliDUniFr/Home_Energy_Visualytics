@@ -66,7 +66,7 @@ with col3:
     appliances_names = [translate_appliance_name(name) for name in appliances_names]
 
     if len(model_files) != len(scaler_files):
-        st.warning(t('files_mismatch'))
+        st.warning(t('files_mismatch'), icon='ℹ️')
     else:
         files_df = pd.DataFrame({
             t('appliance'): appliances_names,

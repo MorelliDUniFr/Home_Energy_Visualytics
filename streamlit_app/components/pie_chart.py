@@ -14,7 +14,7 @@ def plot_pie_chart(f_data, column, chart_key, colors):
     required_columns = ['appliance', 'value', 'date']
     if not all(col in f_data.columns for col in required_columns):
         with column:
-            st.warning(f"Data must contain the following columns: {', '.join(required_columns)}.")
+            st.warning(f"Data must contain the following columns: {', '.join(required_columns)}.", icon='ℹ️')
         return None
 
     # Get unique appliances from the filtered data
@@ -35,7 +35,7 @@ def plot_pie_chart(f_data, column, chart_key, colors):
 
     if appliances_consumption.empty:
         with column:
-            st.warning(f"No appliance consumption data available.")
+            st.warning(f"No appliance consumption data available.", icon='ℹ️')
         return None
 
     translated_names = [translate_appliance_name(name) for name in appliances_consumption.index]

@@ -35,7 +35,7 @@ def plot_percentage_bar_chart(f_data_1, f_data_2, colors, time_period):
 
     # Warn the user if the dates selected are the same
     if date_1 == date_2:
-        st.warning(t('warning_same_dates'))
+        st.warning(t('warning_same_dates'), icon='ℹ️')
         st.stop()
 
     # Add the formatted date as a new column to both datasets

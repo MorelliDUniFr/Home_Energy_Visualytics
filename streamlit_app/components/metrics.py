@@ -22,7 +22,7 @@ def _get_consumption_and_cost(key_suffix: str, tariff_name: str):
     return total_wh, cost
 
 
-def display_consumption_metrics(cols, live_value, key_suffix: str = '_1', is_comparison: bool = False):
+def display_consumption_metrics(cols, live_value=None, key_suffix: str = '_1', is_comparison: bool = False):
     load_value(f'consumption_time_period{key_suffix}', 0.0)
     load_value(f'cost_time_period{key_suffix}', 0.0)
 
@@ -65,11 +65,12 @@ def display_consumption_metrics(cols, live_value, key_suffix: str = '_1', is_com
             delta_color='inverse'
         )
 
-    with cols[2]:
-        st.metric(
-            label=t('total_live_power'),
-            value=f"{format_value(live_value, 'W')}",
-            delta=None  # No delta for live value
-        )
+    if live_value is not None:
+        with cols[2]:
+            st.metric(
+                label=t('total_live_power'),
+                value=f"{format_value(live_value, 'W')}",
+                delta=None  # No delta for live value
+            )
 
 

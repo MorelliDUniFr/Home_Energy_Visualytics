@@ -65,9 +65,6 @@ def get_appliance_order(appliance_colors):
     """
     Returns the order of appliances based on the keys of the appliance_colors dictionary.
     """
-    # Sort by key, with 'Other' last
-    # sorted_appliances = sorted(appliance_colors.keys(), key=lambda x: (x.lower() == 'other', x.lower()))
-    # return sorted_appliances
     return list(appliance_colors.keys())
 
 appliance_order = get_appliance_order(appliance_colors)

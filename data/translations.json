@@ -412,5 +412,11 @@
     "it": "Potenza Attiva Totale",
     "fr": "Puissance Active Totale",
     "de": "Gesamtwirkleistung"
+  },
+  "user_too_early": {
+    "en": "You are trying to access the dashboard too early. Please wait until the data is available",
+    "it": "Stai cercando di accedere alla dashboard troppo presto. Attendi fino a quando i dati non sono disponibili",
+    "fr": "Vous essayez d'accéder au tableau de bord trop tôt. Veuillez attendre que les données soient disponibles",
+    "de": "Sie versuchen, auf das Dashboard zuzugreifen, bevor die Daten verfügbar sind. Bitte warten Sie, bis die Daten verfügbar sind"
   }
 }

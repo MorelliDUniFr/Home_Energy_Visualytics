@@ -29,11 +29,13 @@ batch_size = int(config['Inference']['batch_size'])
 model_path = os.path.join(data_path, models_dir)
 infer_data_path = os.path.join(data_path, infer_data_file)
 input_scaler_path = os.path.join(data_path, scalers_dir, input_scaler_file)
-target_scalers_path = os.path.join(data_path, target_scalers_dir, scalers_dir)
+target_scalers_path = os.path.join(data_path, scalers_dir, target_scalers_dir)
 inferred_data_path = os.path.join(data_path, inferred_data_dir)
 
 input_scaler = load(input_scaler_path)
 device = torch.device('cpu')
+
+os.makedirs(inferred_data_path, exist_ok=True)
 
 # Read appliance names from JSON file (optional, you can get from model filenames too)
 with open(os.path.join(data_path, column_names_file), 'r') as file:

@@ -1,5 +1,4 @@
-import os.path
-
+import os
 from components.pie_chart import plot_pie_chart
 from components.line_chart import plot_line_chart
 from components.horizontal_bar_chart import plot_horizontal_bar_chart
@@ -32,6 +31,11 @@ value = cache.get("live_power")
 
 st.title(body=t('page_1_title'), anchor=False)
 
+earliest_date = get_earliest_date(inferred_dataset_path)
+if earliest_date is None:
+    st.info(t('user_too_early'))
+    st.stop()
+
 c1, c2, c3, _, text_column1, text_column2, text_column3 = st.columns([1.33, 1.33, 1.33, 1.5, 1.5, 1.5, 1.5])
 text_column = [text_column1, text_column2, text_column3]
 
@@ -60,8 +64,7 @@ with st.container():
 
             load_value('selected_date_1', default=max_date)
 
-            if max_date < earliest_date:
-                max_date = time_filter['Day']['max_value']
+            max_date = max(max_date, earliest_date)
 
             st.date_input(
                 t(time_filter[st.session_state.time_period]['input_string']),
@@ -119,8 +122,7 @@ with st.container():
 
     # === Month Selection ===
     elif st.session_state.time_period == 'Month':
-        load_value('selected_year_1',
-                   default=available_years[0] if len(available_years) == 1 else available_years[-2])
+        load_value('selected_year_1', default=st.session_state.selected_year_1)
 
         with c3:
             st.selectbox(

@@ -20,14 +20,9 @@ earliest_date = get_earliest_date(inferred_dataset_path)
 load_value("selected_date_1", default=earliest_date)
 load_value("selected_date_2", default=date_ranges.get('yesterday', earliest_date))
 
-dataframe = load_data_by_date_range(inferred_dataset_path, st.session_state.selected_date_1, st.session_state.selected_date_2)
 
 # Columns that must always be included in the display
 mandatory_columns = ['date', 'timestamp']
-
-# Available columns excluding mandatory ones
-available_columns = [col for col in dataframe.columns if col not in mandatory_columns]
-
 
 def execute_cb():
     # Change dfk key to force refresh of dataframe widget
@@ -131,6 +126,15 @@ if uploaded_files:
                 json.dump(sorted_data, f, indent=4)
                 f.truncate()
     st.rerun()
+
+earliest_date = get_earliest_date(inferred_dataset_path)
+if earliest_date is None:
+    st.info(t('user_too_early'))
+    st.stop()
+
+dataframe = load_data_by_date_range(inferred_dataset_path, st.session_state.selected_date_1, st.session_state.selected_date_2)
+# Available columns excluding mandatory ones
+available_columns = [col for col in dataframe.columns if col not in mandatory_columns]
 
 st.divider()
 

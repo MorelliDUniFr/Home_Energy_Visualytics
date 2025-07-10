@@ -159,6 +159,11 @@ def select_and_filter_data(side_suffix: str, container_col):
 
 st.title(body=t('page_2_title'), anchor=False)
 
+earliest_date = get_earliest_date(inferred_dataset_path)
+if earliest_date is None:
+    st.info(t('user_too_early'))
+    st.stop()
+
 c1, _ = st.columns([1.33, 8.66])
 
 

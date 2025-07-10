@@ -1,7 +1,7 @@
 import streamlit as st
 import plotly.express as px
 from utils.translations import t, translate_appliance_name
-from utils.appliances import appliance_order
+from utils.appliances import get_ordered_appliance_list
 from utils.formatting import format_value
 
 
@@ -21,7 +21,7 @@ def plot_pie_chart(f_data, column, chart_key, colors):
     unique_appliances = f_data['appliance'].unique()
 
     # Create a filtered appliance order that keeps only the appliances present in the data
-    filtered_appliance_order = [appliance for appliance in appliance_order if appliance in unique_appliances]
+    filtered_appliance_order = [appliance for appliance in get_ordered_appliance_list() if appliance in unique_appliances]
 
     sample_interval = 10  # seconds
 

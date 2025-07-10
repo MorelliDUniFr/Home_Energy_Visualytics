@@ -24,7 +24,7 @@ def get_available_months_for_year(dataset_path: str, selected_year: int):
             month_num = int(match.group(2))
             month_name = calendar.month_name[month_num]  # e.g. 3 -> 'March'
             months.add(month_name)
-    # Sort by month number to keep correct order
+    # Sort by month number to keep the correct order
     return sorted(months, key=lambda m: list(calendar.month_name).index(m))
 
 

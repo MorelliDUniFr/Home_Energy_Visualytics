@@ -7,3 +7,4 @@ watchdog~=6.0.0
 babel~=2.17.0
 diskcache
 streamlit-autorefresh
+python-dateutil

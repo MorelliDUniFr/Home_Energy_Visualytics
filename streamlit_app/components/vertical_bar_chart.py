@@ -5,12 +5,12 @@ from datetime import datetime
 import pandas as pd
 from utils.filters import time_filter
 from utils.formatting import format_value
-from utils.appliances import appliance_order
+from utils.appliances import get_ordered_appliance_list
 import streamlit as st
 from utils.session_state_utils import store_value, load_value
 
 
-def plot_percentage_bar_chart(f_data_1, f_data_2, colors, time_period):
+def plot_vertical_bar_chart(f_data_1, f_data_2, colors, time_period):
     """
     Plots a grouped bar chart comparing appliance usage between two datasets (dates),
     with an option to view in actual Wh or as relative percentages.
@@ -88,7 +88,7 @@ def plot_percentage_bar_chart(f_data_1, f_data_2, colors, time_period):
 
     grouped[time_period] = pd.Categorical(grouped[time_period], [date_1, date_2], ordered=True)
     grouped.sort_values(["appliance", time_period], inplace=True)
-    filtered_appliance_order = [translate_appliance_name(app) for app in appliance_order if
+    filtered_appliance_order = [translate_appliance_name(app) for app in get_ordered_appliance_list() if
                                 app in pd.unique(pd.concat([f_data_1["appliance"], f_data_2["appliance"]]))]
 
     grouped["translated_appliance"] = grouped["appliance"].apply(translate_appliance_name)

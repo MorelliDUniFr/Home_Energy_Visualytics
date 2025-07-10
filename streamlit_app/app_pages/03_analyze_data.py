@@ -7,7 +7,7 @@ from utils.session_state_utils import load_value, store_value
 from utils.filters import time_filter, date_ranges
 from utils.data_loader import get_earliest_date
 import pandas as pd
-from utils.appliances import appliance_colors, format_appliance_name
+from utils.appliances import get_appliance_colors, format_appliance_name
 import streamlit as st
 from utils.data_loader import load_data_by_date_range
 from utils.config_utils import inferred_dataset_path, DATE_FORMAT, data_path, models_dir, scalers_dir, model_file, target_scalers_file, color_palette, appliances_colors_file, target_scalers_dir
@@ -19,7 +19,6 @@ earliest_date = get_earliest_date(inferred_dataset_path)
 
 load_value("selected_date_1", default=earliest_date)
 load_value("selected_date_2", default=date_ranges.get('yesterday', earliest_date))
-
 
 # Columns that must always be included in the display
 mandatory_columns = ['date', 'timestamp']
@@ -60,8 +59,25 @@ with col3:
     appliances_names = [format_appliance_name(f) for f in model_files]
     appliances_names = [translate_appliance_name(name) for name in appliances_names]
 
-    if len(model_files) != len(scaler_files):
-        st.warning(t('files_mismatch'), icon='ℹ️')
+    # Extract appliance names from both sets of files
+    model_appliances = {format_appliance_name(f) for f in model_files}
+    scaler_appliances = {format_appliance_name(f) for f in scaler_files}
+
+    # Find mismatches
+    only_models = model_appliances - scaler_appliances
+    only_scalers = scaler_appliances - model_appliances
+
+    if only_models or only_scalers:
+        message = t('files_mismatch')
+        if only_models:
+            missing_scalers = ', '.join(sorted(only_models))
+            message += f"\n\n• {t('missing_scaler_for')}: **{missing_scalers}**"
+        if only_scalers:
+            missing_models = ', '.join(sorted(only_scalers))
+            message += f"\n\n• {t('missing_model_for')}: **{missing_models}**"
+        st.warning(message, icon='ℹ️')
+
+    # If everything matches, show the table
     else:
         files_df = pd.DataFrame({
             t('appliance'): appliances_names,
@@ -89,6 +105,11 @@ with col3:
             appliance_name = appliances_names[selected_idx]
             dialog(name=appliance_name)
 
+# Initialize uploader key if not present
+if 'file_uploader_key' not in ss:
+    ss.file_uploader_key = str(uuid.uuid4())
+
+# Handle file upload UI
 with col4:
     st.write(t('upload'))
     uploaded_files = st.file_uploader(
@@ -96,28 +117,32 @@ with col4:
         label_visibility='collapsed',
         help="Upload Appliance Model (.pt file) and its corresponding Output Converter (.pkl file)",
         type=['pt', 'pkl'],
-        accept_multiple_files=True
+        accept_multiple_files=True,
+        key=ss.file_uploader_key  # dynamic key
     )
 
-if uploaded_files:
+# Process uploads only once
+if uploaded_files and 'upload_handled' not in ss:
     for file in uploaded_files:
         if file.name.endswith('.pt'):
             with open(os.path.join(data_path, models_dir, file.name), "wb") as f:
                 f.write(file.getbuffer())
         elif file.name.endswith('.pkl'):
-            with open(os.path.join(data_path, scalers_dir, file.name), "wb") as f:
+            with open(os.path.join(data_path, scalers_dir, target_scalers_dir, file.name), "wb") as f:
                 f.write(file.getbuffer())
 
+        # Infer appliance name from filename
         appliance_name = file.name.split('.')[0].rsplit('_', 1)[0].replace('_', ' ').title()
 
+        appliance_colors = get_appliance_colors()
         if appliance_name not in appliance_colors:
-            # Assign a new color cyclically from palette
-            appliance_colors[appliance_name] = color_palette[len(appliance_colors) % len(color_palette)]
+            # Assign new color and update file
+            new_color = color_palette[len(appliance_colors) % len(color_palette)]
+            appliance_colors[appliance_name] = new_color
 
-            # Update colors json file with alphabetical sorting, 'Other' last
             with open(os.path.join(data_path, appliances_colors_file), 'r+') as f:
                 data_colors = json.load(f)
-                data_colors[appliance_name] = appliance_colors[appliance_name]
+                data_colors[appliance_name] = new_color
                 sorted_data = dict(sorted(
                     data_colors.items(),
                     key=lambda item: (item[0].lower() == 'other', item[0].lower())
@@ -125,7 +150,15 @@ if uploaded_files:
                 f.seek(0)
                 json.dump(sorted_data, f, indent=4)
                 f.truncate()
+
+    # Set flag and rerun with new uploader key
+    ss.upload_handled = True
+    ss.file_uploader_key = str(uuid.uuid4())  # reset the uploader input
     st.rerun()
+
+# Clear flag after rerun
+elif 'upload_handled' in ss:
+    del ss.upload_handled
 
 earliest_date = get_earliest_date(inferred_dataset_path)
 if earliest_date is None:

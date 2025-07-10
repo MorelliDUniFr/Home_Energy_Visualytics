@@ -1,19 +1,21 @@
 import streamlit as st
 from components.pie_chart import plot_pie_chart
-from components.percentage_bar_chart import plot_percentage_bar_chart
+from components.vertical_bar_chart import plot_vertical_bar_chart
 from utils.translations import t
 from babel.dates import format_date
-from datetime import datetime, timedelta
+from datetime import datetime
 from utils.session_state_utils import load_value, store_value
 from utils.filters import time_filter, date_ranges, filter_appliances_with_nonzero_sum
 from utils.data_loader import get_earliest_date, load_inferred_data_partitioned, get_dataset_fingerprint
 from utils.partition_utils import get_available_years, get_available_months_for_year, find_sel_indexes
 import pandas as pd
-from utils.appliances import appliance_colors
+from utils.appliances import get_appliance_colors
 from utils.config_utils import inferred_dataset_path, DATE_FORMAT
 from components.horizontal_bar_chart import plot_horizontal_bar_chart
 from components.metrics import display_consumption_metrics
 from utils.consumption import compute_total_consumptions
+from utils.appliances import get_appliance_colors
+
 
 def select_and_filter_data(side_suffix: str, container_col):
     selected_date_key = f'selected_date{side_suffix}'
@@ -214,9 +216,9 @@ with st.container():
     load_value('chart_type', default='bar_chart')
     if st.session_state.chart_type == 'bar_chart':
         with c11:
-            plot_horizontal_bar_chart(filtered_data_1, colors=appliance_colors, chart_key='horizontal_bar_chart1')
+            plot_horizontal_bar_chart(filtered_data_1, colors=get_appliance_colors(), chart_key='horizontal_bar_chart1')
     else:
-        plot_pie_chart(filtered_data_1, c11, 'pie_chart1', colors=appliance_colors)
+        plot_pie_chart(filtered_data_1, c11, 'pie_chart1', colors=get_appliance_colors())
 
     filtered_date_2, filtered_data_2, col_metrics2 = select_and_filter_data('_2', c12)
 
@@ -226,17 +228,17 @@ with st.container():
 
     if st.session_state.chart_type == 'bar_chart':
         with c12:
-            plot_horizontal_bar_chart(filtered_data_2, colors=appliance_colors, chart_key='horizontal_bar_chart2')
+            plot_horizontal_bar_chart(filtered_data_2, colors=get_appliance_colors(), chart_key='horizontal_bar_chart2')
     else:
-        plot_pie_chart(filtered_data_2, c12, 'pie_chart2', colors=appliance_colors)
+        plot_pie_chart(filtered_data_2, c12, 'pie_chart2', colors=get_appliance_colors())
 
     with st.container(border=True):
         if filtered_data_1.empty or filtered_data_2.empty:
             st.stop()
         else:
-            plot_percentage_bar_chart(
+            plot_vertical_bar_chart(
                 filtered_data_1,
                 filtered_data_2,
-                colors=appliance_colors,
+                colors=get_appliance_colors(),
                 time_period=st.session_state.time_period
             )

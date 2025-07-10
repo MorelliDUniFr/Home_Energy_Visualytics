@@ -11,7 +11,7 @@ from utils.config_utils import inferred_dataset_path, DATE_FORMAT, data_path
 from utils.partition_utils import get_available_years, get_available_months_for_year
 from utils.data_loader import get_earliest_date, load_and_filter_data_by_time
 from utils.filters import time_filter
-from utils.appliances import appliance_colors
+from utils.appliances import get_appliance_colors
 from utils.annotations import load_annotations, save_annotations, add_annotation, get_grouped_annotations, delete_annotation
 from utils.formatting import format_value
 from components.metrics import display_consumption_metrics
@@ -28,6 +28,7 @@ from streamlit_autorefresh import st_autorefresh
 cache = Cache(os.path.join(data_path, 'diskcache'))
 st_autorefresh(interval=10000, key="data_refresh")
 value = cache.get("live_power")
+
 
 st.title(body=t('page_1_title'), anchor=False)
 
@@ -196,9 +197,9 @@ with c11:
     )
 
     if st.session_state.chart_type == 'bar_chart':
-        plot_horizontal_bar_chart(filtered_data, colors=appliance_colors, chart_key='horizontal_bar_chart1')
+        plot_horizontal_bar_chart(filtered_data, colors=get_appliance_colors(), chart_key='horizontal_bar_chart1')
     else:
-        plot_pie_chart(filtered_data, c11, 'pie_chart', colors=appliance_colors)
+        plot_pie_chart(filtered_data, c11, 'pie_chart', colors=get_appliance_colors())
 
 with c12:
     view_mode_options = {

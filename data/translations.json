@@ -418,5 +418,17 @@
     "it": "Stai cercando di accedere alla dashboard troppo presto. Attendi fino a quando i dati non sono disponibili",
     "fr": "Vous essayez d'accéder au tableau de bord trop tôt. Veuillez attendre que les données soient disponibles",
     "de": "Sie versuchen, auf das Dashboard zuzugreifen, bevor die Daten verfügbar sind. Bitte warten Sie, bis die Daten verfügbar sind"
+  },
+  "missing_scaler_for": {
+    "en": "Missing scaler for",
+    "it": "Scaler mancante per",
+    "fr": "Scaler manquant pour",
+    "de": "Fehlender Skalierer für"
+  },
+  "missing_model_for": {
+    "en": "Missing model for",
+    "it": "Modello mancante per",
+    "fr": "Modèle manquant pour",
+    "de": "Fehlendes Modell für"
   }
 }

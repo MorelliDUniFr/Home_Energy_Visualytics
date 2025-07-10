@@ -1,21 +1,16 @@
 import os
+import pandas as pd
 from .config_utils import data_path, models_dir, scalers_dir, color_palette, appliances_colors_file
 from .storage import safe_load_json
-import pandas as pd
+import streamlit as st
 
-
-def read_appliances_from_files():
-    model_files = os.listdir(os.path.join(data_path, models_dir))
-    scaler_files = os.listdir(os.path.join(data_path, scalers_dir))
-
-    appliances_names = [format_appliance_name(f) for f in model_files]
-
-    appliances_names.sort(key=lambda x: (x == 'Other', x))
-
-    return appliances_names
-
+# ---------------------- Appliance Name Parsing ----------------------
 
 def format_appliance_name(filename: str) -> str:
+    """
+    Formats a model filename into a readable appliance name.
+    Example: 'washing_machine_model.pt' -> 'Washing Machine'
+    """
     base = filename.split('.')[0].rsplit('_', 1)[0]
     parts = base.split('_')
     return ' '.join([
@@ -23,48 +18,92 @@ def format_appliance_name(filename: str) -> str:
         for word in parts
     ])
 
+def read_appliances_from_files(models_dir_path) -> list[str]:
+    """
+    Reads appliance model filenames from a directory and formats them into names.
+    """
+    try:
+        model_files = os.listdir(models_dir_path)
+    except FileNotFoundError:
+        return []
 
-def generate_appliance_colors(names):
+    appliance_names = [format_appliance_name(f) for f in model_files]
+    appliance_names.sort(key=lambda x: (x == 'Other', x))  # 'Other' always last
+    return appliance_names
+
+# ---------------------- Appliance Colors ----------------------
+
+def generate_appliance_colors(names: list[str], palette: list[str]) -> dict:
+    """
+    Assigns each appliance a color from the palette.
+    """
     colors = {}
-    # Assign colors using the original order
     for i, app in enumerate(names):
         if app == 'Other':
-            colors[app] = 'rgb(153, 153, 153)'
+            colors[app] = 'rgb(153, 153, 153)'  # grey for 'Other'
         else:
-            colors[app] = color_palette[i % len(color_palette)]
+            colors[app] = palette[i % len(palette)]
+    return colors
+
+def rgb_to_rgba(rgb_string, alpha=1.0) -> str:
+    """
+    Converts an 'rgb(r, g, b)' string to an 'rgba(r, g, b, a)' string.
+    """
+    r, g, b = rgb_string.strip()[4:-1].split(',')
+    return f'rgba({r.strip()}, {g.strip()}, {b.strip()}, {alpha})'
+
+def get_or_generate_appliance_colors(
+    data_path: str,
+    appliances_colors_file: str,
+    models_dir: str,
+    color_palette: list[str]
+) -> dict:
+    """
+    Returns appliance colors, loading from file or generating and saving if not present.
+    """
+    color_path = os.path.join(data_path, appliances_colors_file)
+    models_path = os.path.join(data_path, models_dir)
+
+    if os.path.exists(color_path):
+        return safe_load_json(color_path)
+
+    appliance_names = read_appliances_from_files(models_path)
+    colors = generate_appliance_colors(appliance_names, color_palette)
+
+    try:
+        with open(color_path, 'w') as f:
+            pd.Series(colors).to_json(f, indent=4)
+    except IOError:
+        pass
 
     return colors
 
+# ---------------------- Appliance Ordering ----------------------
 
-def rgb_to_rgba(rgb_string, alpha=1.0):
+def get_appliance_order(appliance_colors: dict) -> list[str]:
     """
-    Converts an 'rgb(r, g, b)' string to an 'rgba(r, g, b, alpha)' string.
-    """
-    # Extract numbers from the rgb string
-    values = rgb_string.strip()[4:-1]  # Removes 'rgb(' and ')'
-    r, g, b = values.split(',')
-    return f'rgba({r.strip()}, {g.strip()}, {b.strip()}, {alpha})'
-
-
-def get_or_generate_appliance_colors(data_path, appliances_colors_file, models_dir, color_palette):
-    if os.path.exists(os.path.join(data_path, appliances_colors_file)):
-        appliance_colors = safe_load_json(os.path.join(data_path, appliances_colors_file))
-    else:
-        appliance_names = read_appliances_from_files()
-        appliance_colors = generate_appliance_colors(appliance_names)
-        # Save the colors to a JSON file
-        with open(os.path.join(data_path, appliances_colors_file), 'w') as f:
-            pd.Series(appliance_colors).to_json(f, indent=4)
-
-    return appliance_colors
-
-appliance_colors = get_or_generate_appliance_colors(data_path=data_path, appliances_colors_file=appliances_colors_file,
-                                                    models_dir=models_dir, color_palette=color_palette)
-
-def get_appliance_order(appliance_colors):
-    """
-    Returns the order of appliances based on the keys of the appliance_colors dictionary.
+    Returns appliance order based on the color dictionary keys (with 'Other' last).
     """
     return list(appliance_colors.keys())
 
-appliance_order = get_appliance_order(appliance_colors)
+# ---------------------- Lazy Getters ----------------------
+
+def get_colors_file_mtime():
+    path = os.path.join(data_path, appliances_colors_file)
+    return os.path.getmtime(path) if os.path.exists(path) else None
+
+def get_appliance_colors():
+    mtime = get_colors_file_mtime()
+    @st.cache_resource
+    def _load(_mtime):
+        return get_or_generate_appliance_colors(
+            data_path=data_path,
+            appliances_colors_file=appliances_colors_file,
+            models_dir=models_dir,
+            color_palette=color_palette
+        )
+
+    return _load(mtime)
+
+def get_ordered_appliance_list() -> list[str]:
+    return get_appliance_order(get_appliance_colors())

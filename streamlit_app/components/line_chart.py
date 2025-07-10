@@ -3,9 +3,9 @@ import plotly.express as px
 import pandas as pd
 from utils.translations import t, translate_appliance_name
 from utils.formatting import format_value
-from utils.appliances import appliance_colors
+from utils.appliances import get_appliance_colors
 from utils.filters import time_filter
-from utils.appliances import appliance_order, rgb_to_rgba
+from utils.appliances import rgb_to_rgba, get_ordered_appliance_list
 from utils.session_state_utils import load_value, store_value
 
 
@@ -32,12 +32,12 @@ def plot_line_chart(f_data, t_filter):
     f_data['translated_appliance'] = f_data['appliance'].apply(translate_appliance_name)
 
     if st.session_state.line_type == 'cumulative':
-        legend_order = appliance_order[::-1]
+        legend_order = get_ordered_appliance_list()[::-1]
         legend_traceorder = "reversed"
         stackgroup="one"  # Enable cumulative stacking
         fill="tonexty"
     elif st.session_state.line_type == 'individual':
-        legend_order = appliance_order
+        legend_order = get_ordered_appliance_list()
         legend_traceorder = "normal"
         stackgroup=None  # No cumulative stacking
         fill="tozeroy"
@@ -53,7 +53,7 @@ def plot_line_chart(f_data, t_filter):
             "translated_appliance": t("appliances")
         },
         category_orders={"translated_appliance": [translate_appliance_name(a) for a in legend_order]},
-        color_discrete_map={translate_appliance_name(a): appliance_colors[a] for a in appliance_colors},
+        color_discrete_map={translate_appliance_name(a): get_appliance_colors()[a] for a in get_appliance_colors()},
         custom_data=["appliance", "formatted_value"]
     )
 
@@ -87,8 +87,8 @@ def plot_line_chart(f_data, t_filter):
 
     fill_alpha = 0.5
     for trace in fig.data:
-        original_name = next((a for a in appliance_colors if translate_appliance_name(a) == trace.name), trace.name)
-        color_rgb = appliance_colors.get(original_name)
+        original_name = next((a for a in get_appliance_colors() if translate_appliance_name(a) == trace.name), trace.name)
+        color_rgb = get_appliance_colors().get(original_name)
         trace.update(
             fillcolor=rgb_to_rgba(color_rgb, alpha=fill_alpha),
             line=dict(color=color_rgb)

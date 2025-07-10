@@ -1,18 +1,36 @@
 from datetime import date, timedelta
 import pandas as pd
+import calendar
+from dateutil.relativedelta import relativedelta
 
 
 def get_date_ranges():
-    """Returns a dictionary with common date ranges."""
+    """Returns a dictionary with common date ranges with correct month/year arithmetic."""
     today = date.today()
+
+    # Yesterday and others stay the same
+    yesterday = today - timedelta(days=1)
+    another_yesterday = today - timedelta(days=2)
+    last_week = today - timedelta(weeks=1)
+
+    # For last_month: subtract 1 month safely, handle month length properly
+    last_month = today - relativedelta(months=1)
+    # Use the same day or the last day of last_month if day exceeds
+    last_month_day = min(today.day, calendar.monthrange(last_month.year, last_month.month)[1])
+    last_month_date = date(last_month.year, last_month.month, last_month_day)
+
+    # For last_year: subtract 1 year safely, keep same month and day or fallback to last valid day
+    last_year = today - relativedelta(years=1)
+    last_year_day = min(today.day, calendar.monthrange(last_year.year, last_year.month)[1])
+    last_year_date = date(last_year.year, last_year.month, last_year_day)
 
     return {
         "today": today,
-        "yesterday": today - timedelta(days=1),
-        "another_yesterday": today - timedelta(days=2),
-        "last_week": today - timedelta(weeks=1),
-        "last_month": today - timedelta(days=30),
-        "last_year": date(today.year - 1, today.month, 1),
+        "yesterday": yesterday,
+        "another_yesterday": another_yesterday,
+        "last_week": last_week,
+        "last_month": last_month_date,
+        "last_year": last_year_date,
     }
 
 date_ranges = get_date_ranges()

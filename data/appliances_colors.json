@@ -7,7 +7,9 @@
     "Laptop": "rgb(158, 185, 243)",
     "Microwave": "rgb(254, 136, 177)",
     "PC": "rgb(201, 219, 116)",
+    "Printer": "rgb(246, 207, 113)",
     "Router": "rgb(139, 224, 164)",
+    "Smartphone": "rgb(248, 156, 116)",
     "Tablet": "rgb(180, 151, 231)",
     "Washing Machine": "rgb(179, 179, 179)",
     "Other": "rgb(153, 153, 153)"

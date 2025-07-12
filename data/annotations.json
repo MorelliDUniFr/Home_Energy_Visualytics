@@ -3,33 +3,23 @@
         "07": {
             "02": [
                 {
-                    "text": "aggiunto al giorno",
+                    "text": "Annotation added to 'day'",
                     "period": "Day"
                 },
                 {
-                    "text": "altro commento al giorno",
+                    "text": "Also this annotation has been added to the 'day'",
                     "period": "Day"
                 },
                 {
-                    "text": "questo invece \u00e9 aggiunto alla settimana",
+                    "text": "This annotation has been added to the 'week'",
                     "period": "Week"
                 },
                 {
-                    "text": "ciao",
-                    "period": "Day"
-                }
-            ],
-            "01": [
-                {
-                    "text": "aggiunto al mese",
+                    "text": "This annotation has been added to the 'month'",
                     "period": "Month"
                 },
                 {
-                    "text": "aggiunto all'anno",
-                    "period": "Year"
-                },
-                {
-                    "text": "anche questa aggiunta all'anno",
+                    "text": "And finally this annotation has been added to the 'year'",
                     "period": "Year"
                 }
             ]

@@ -23,6 +23,7 @@ def load_inferred_data_partitioned(dataset_path: str, start_date: str, end_date:
     scanner = dataset.scanner(filter=date_filter)
     table = scanner.to_table()
     df = table.to_pandas()
+
     return df
 
 

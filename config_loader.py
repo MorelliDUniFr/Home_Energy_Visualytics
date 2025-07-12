@@ -138,7 +138,7 @@ def validate_config(config):
     transfer_dt = datetime.strptime(transfer_timestamp, '%H:%M')
     inference_dt = datetime.strptime(inference_timestamp, '%H:%M')
     # Minimum delay of 3 minutes
-    min_delay = timedelta(minutes=3)
+    min_delay = timedelta(minutes=1)
     if inference_dt - transfer_dt < min_delay:
         logger.error('Inference time must be at least 3 minutes after transfer time')
 

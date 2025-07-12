@@ -29,7 +29,6 @@ cache = Cache(os.path.join(data_path, 'diskcache'))
 st_autorefresh(interval=10000, key="data_refresh")
 value = cache.get("live_power")
 
-
 st.title(body=t('page_1_title'), anchor=False)
 
 earliest_date = get_earliest_date(inferred_dataset_path)
@@ -62,10 +61,7 @@ with st.container():
         with c2:
             earliest_date = get_earliest_date(inferred_dataset_path)
             max_date = time_filter[st.session_state.time_period]['max_value']
-
             load_value('selected_date_1', default=max_date)
-
-            max_date = max(max_date, earliest_date)
 
             st.date_input(
                 t(time_filter[st.session_state.time_period]['input_string']),

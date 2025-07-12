@@ -48,6 +48,13 @@ appliances_list = [
 ]
 
 
+def reset_daily_file():
+    daily_path = os.path.join(data_path, infer_data_path)
+    if os.path.exists(daily_path):
+        os.remove(daily_path)
+        logger.info("Daily file has been reset for the new day.")
+
+
 def prepare_inference_input(filename):
     df = pd.read_parquet(filename)
 
@@ -101,7 +108,6 @@ def melt_dataframe(df):
                       var_name='appliance',
                       value_name='value')
     df_long['timestamp'] = pd.to_datetime(df_long['timestamp'], unit='ms')
-    # df_long['date'] = df_long['timestamp'].dt.date
     df_long['minute'] = df_long['timestamp'].dt.minute
     df_long['hour'] = df_long['timestamp'].dt.hour
     df_long['month'] = df_long['timestamp'].dt.to_period('M')
@@ -195,6 +201,7 @@ if __name__ == "__main__":
 
                     append_predictions(timestamps, predictions)
                     already_run_today = True
+                    reset_daily_file()
                 except Exception as e:
                     logger.error(f"[{now}] Error during inference: {e}")
         else:

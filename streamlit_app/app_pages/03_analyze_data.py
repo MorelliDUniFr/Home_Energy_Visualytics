@@ -15,6 +15,7 @@ import os
 
 st.title(body=t('page_3_title'), anchor=False)
 
+
 earliest_date = get_earliest_date(inferred_dataset_path)
 
 load_value("selected_date_1", default=earliest_date)

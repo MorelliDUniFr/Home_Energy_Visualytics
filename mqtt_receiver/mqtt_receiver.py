@@ -39,9 +39,18 @@ already_copied_today = False
 
 
 def write_daily_file(df):
-    """Overwrite daily file with the given DataFrame."""
+    """Append new data to mqtt_data_daily.parquet, or overwrite it if needed."""
     daily_path = os.path.join(data_path, daily_data_file)
-    table = pa.Table.from_pandas(df=df)
+
+    if os.path.exists(daily_path):
+        existing_df = pd.read_parquet(daily_path)
+        combined_df = pd.concat([existing_df, df], ignore_index=True)
+    else:
+        combined_df = df
+
+    combined_df.sort_values('timestamp', inplace=True)
+
+    table = pa.Table.from_pandas(combined_df)
     pq.write_table(table, daily_path)
 
 

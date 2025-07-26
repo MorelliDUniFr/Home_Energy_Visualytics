@@ -1,8 +1,13 @@
 import streamlit as st
 
+# --- Page config ---
+st.set_page_config(
+    page_title= 'Dashboard',
+    layout='wide',
+)
+
 from utils.session_state_utils import store_value, load_value
 from utils.translations import t, languages
-
 
 # --- Set default session state values ---
 default_state = {
@@ -11,6 +16,7 @@ default_state = {
     "consumption_time_period_1": 0,
     "consumption_time_period_2": 0,
 }
+
 load_value("selected_tariff", "simple")
 load_value("lang", "en")
 
@@ -25,11 +31,7 @@ pg = st.navigation([
     st.Page('app_pages/03_analyze_data.py', title=t('page_3_sidebar_title')),
 ])
 
-# --- Page config ---
-st.set_page_config(
-    page_title=(t('page_title')),
-    layout='wide',
-)
+
 
 tariff_labels = {
     "simple": "Simple",

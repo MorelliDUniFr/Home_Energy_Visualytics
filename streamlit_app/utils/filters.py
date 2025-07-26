@@ -4,22 +4,25 @@ import calendar
 from dateutil.relativedelta import relativedelta
 
 
+# Generate commonly used relative date values
 def get_date_ranges():
-    """Returns a dictionary with common date ranges with correct month/year arithmetic."""
+    """
+    Returns a dictionary of reference dates such as yesterday, last week,
+    last month, and last year. Handles calendar edge cases (e.g. Feb 29).
+    """
     today = date.today()
 
-    # Yesterday and others stay the same
+    # Common relative dates
     yesterday = today - timedelta(days=1)
     another_yesterday = today - timedelta(days=2)
     last_week = today - timedelta(weeks=1)
 
-    # For last_month: subtract 1 month safely, handle month length properly
+    # Handle month transitions safely (e.g., from March 31 to Feb 28)
     last_month = today - relativedelta(months=1)
-    # Use the same day or the last day of last_month if day exceeds
     last_month_day = min(today.day, calendar.monthrange(last_month.year, last_month.month)[1])
     last_month_date = date(last_month.year, last_month.month, last_month_day)
 
-    # For last_year: subtract 1 year safely, keep same month and day or fallback to last valid day
+    # Handle year transitions safely
     last_year = today - relativedelta(years=1)
     last_year_day = min(today.day, calendar.monthrange(last_year.year, last_year.month)[1])
     last_year_date = date(last_year.year, last_year.month, last_year_day)
@@ -33,15 +36,17 @@ def get_date_ranges():
         "last_year": last_year_date,
     }
 
+
+# Predefined configuration for different time filters used in the app
 date_ranges = get_date_ranges()
 
 time_filter = {
     "Day": {
-        "tick_format": "%H:%M",
+        "tick_format": "%H:%M",  # x-axis format
         "chart_x_value": "timestamp",
         "input_string": 'select_day',
-        "max_value": get_date_ranges()["yesterday"],
-        "value": get_date_ranges()["yesterday"],
+        "max_value": date_ranges["yesterday"],
+        "value": date_ranges["yesterday"],
         "timedelta_days": 0,
         "group_by_column": ["hour", "minute"],
         "time_period": "minute",
@@ -52,8 +57,8 @@ time_filter = {
         "tick_format": "%d %b %H:%M",
         "chart_x_value": "date",
         "input_string": 'select_starting_day',
-        "max_value": get_date_ranges()["last_week"],
-        "value": get_date_ranges()["last_week"],
+        "max_value": date_ranges["last_week"],
+        "value": date_ranges["last_week"],
         "timedelta_days": 6,
         "group_by_column": "date",
         "time_period": None,
@@ -64,8 +69,8 @@ time_filter = {
         "tick_format": "%d %b",
         "chart_x_value": "date",
         "input_string": 'select_starting_day',
-        "max_value": get_date_ranges()["last_month"],
-        "value": get_date_ranges()["last_month"],
+        "max_value": date_ranges["last_month"],
+        "value": date_ranges["last_month"],
         "timedelta_days": 29,
         "group_by_column": "date",
         "time_period": None,
@@ -76,8 +81,8 @@ time_filter = {
         "tick_format": "%d %b %Y",
         "chart_x_value": "date",
         "input_string": 'select_starting_month',
-        "max_value": get_date_ranges()["last_year"],
-        "value": get_date_ranges()["last_year"],
+        "max_value": date_ranges["last_year"],
+        "value": date_ranges["last_year"],
         "timedelta_days": 364,
         "group_by_column": "month",
         "time_period": "month",
@@ -86,30 +91,53 @@ time_filter = {
     },
 }
 
+
+# Filter out appliances that have zero consumption over the period
 def filter_appliances_with_nonzero_sum(f_data: pd.DataFrame) -> pd.DataFrame:
     """
-    Filters out appliances with a total value sum of zero.
+    Filters out appliances whose total 'value' across all rows is zero.
+
+    Args:
+        f_data (pd.DataFrame): Input data with 'appliance' and 'value' columns.
+
+    Returns:
+        pd.DataFrame: Filtered data with only active appliances.
     """
     appliance_sums = f_data.groupby('appliance')['value'].sum()
     active_appliances = appliance_sums[appliance_sums != 0].index.tolist()
     return f_data[f_data['appliance'].isin(active_appliances)]
 
 
-def aggregate_data(f_data: pd.DataFrame, group_by_columns: list, date_column: str, time_period: str = None) -> pd.DataFrame:
-    """Aggregates data by summing values and formatting time-based columns."""
-    f_data = f_data.copy()  # Avoid modifying the original DataFrame
+# Aggregate the data over time and appliance groups
+def aggregate_data(f_data: pd.DataFrame, group_by_columns: list, date_column: str,
+                   time_period: str = None) -> pd.DataFrame:
+    """
+    Aggregates input data by averaging values over specified groupings.
+    Handles conversion of time columns (minute/hour/month) to appropriate datetime formats.
 
-    # Ensure the date column is in datetime format
+    Args:
+        f_data (pd.DataFrame): Input DataFrame containing 'value' and time columns.
+        group_by_columns (list): Columns to group by, e.g., ['hour', 'minute'] or 'date'.
+        date_column (str): Column name containing timestamp/date information.
+        time_period (str): One of 'minute', 'hour', or 'month'. Used for formatting.
+
+    Returns:
+        pd.DataFrame: Aggregated and formatted data.
+    """
+    f_data = f_data.copy()  # Work on a copy to avoid modifying the original
+
+    # Ensure datetime format and drop invalid entries
     f_data[date_column] = pd.to_datetime(f_data[date_column], errors='coerce')
     f_data.dropna(subset=[date_column], inplace=True)
 
-    # Flatten group_by_columns
-    group_by_columns = [item for sublist in group_by_columns for item in (sublist if isinstance(sublist, list) else [sublist])]
+    # Flatten nested groupings if needed
+    group_by_columns = [item for sublist in group_by_columns for item in
+                        (sublist if isinstance(sublist, list) else [sublist])]
 
-    # Group and reset index
+    # Group data and compute the mean of values
     f_data = f_data.groupby(group_by_columns, as_index=False)['value'].mean()
 
-    # Convert time-related columns if necessary
+    # Convert grouped time columns to usable datetime columns
     if time_period == 'minute' and 'minute' in f_data.columns:
         f_data["timestamp"] = pd.to_datetime(f_data['minute'].astype(str).str.zfill(2), format='%M')
         f_data.drop(columns=['minute'], inplace=True)

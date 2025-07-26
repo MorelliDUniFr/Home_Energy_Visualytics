@@ -4,13 +4,25 @@ from datetime import date, datetime, timedelta
 import pandas as pd
 import os
 import re
+
+# Local utility imports
 from .filters import filter_appliances_with_nonzero_sum, time_filter
+
 
 @st.cache_data(show_spinner=False)
 def load_inferred_data_partitioned(dataset_path: str, start_date: str, end_date: str, fingerprint: float) -> pd.DataFrame:
     """
-    Load parquet dataset filtered by date partitions between start_date and end_date (inclusive).
-    The cache is invalidated whenever the fingerprint changes.
+    Loads data from a Hive-partitioned Parquet dataset between start_date and end_date.
+    Uses caching with a custom fingerprint to avoid redundant I/O.
+
+    Args:
+        dataset_path (str): Path to the dataset directory.
+        start_date (str): Start date in YYYY-MM-DD format.
+        end_date (str): End date in YYYY-MM-DD format.
+        fingerprint (float): A value to bust cache when dataset is updated.
+
+    Returns:
+        pd.DataFrame: Filtered dataset for the given date range.
     """
     dataset = ds.dataset(dataset_path, format="parquet", partitioning="hive")
 
@@ -29,10 +41,17 @@ def load_inferred_data_partitioned(dataset_path: str, start_date: str, end_date:
 
 def load_and_filter_data_by_time(dataset_path: str, period: str, suffix: str):
     """
-    period: 'Day', 'Week', 'Month', 'Year'
-    suffix: string like '_1', '_2' to access session_state keys
+    Loads and filters data for a given time period using session_state for inputs.
+
+    Args:
+        dataset_path (str): Path to dataset.
+        period (str): One of 'Day', 'Week', 'Month', 'Year'.
+        suffix (str): Identifier for distinguishing state keys (e.g., '_1').
+
+    Returns:
+        Tuple[date, pd.DataFrame]: Start date and filtered DataFrame.
     """
-    # Get selected values from session_state with fallback
+    # Select start and end dates based on period
     if period == "Day":
         selected_date = st.session_state.get(f"selected_date{suffix}", date.today() - timedelta(days=1))
         start_date = end_date = selected_date
@@ -49,15 +68,17 @@ def load_and_filter_data_by_time(dataset_path: str, period: str, suffix: str):
         start_date = date(selected_year, 1, 1)
         end_date = date(selected_year, 12, 31)
     else:
-        # Default fallback, load yesterday
+        # Fallback to yesterday if unknown period
         start_date = end_date = date.today() - timedelta(days=1)
 
-    # Format dates as strings
+    # Format dates
     start_str = start_date.strftime("%Y-%m-%d")
     end_str = end_date.strftime("%Y-%m-%d")
 
+    # Cache key fingerprint based on latest dataset change
     fingerprint = get_dataset_fingerprint(dataset_path)
 
+    # Load and filter
     df = load_inferred_data_partitioned(dataset_path, start_str, end_str, fingerprint)
     df_filtered = filter_appliances_with_nonzero_sum(df)
 
@@ -66,57 +87,71 @@ def load_and_filter_data_by_time(dataset_path: str, period: str, suffix: str):
 
 @st.cache_data
 def filter_data_by_time(f_data: pd.DataFrame, t_filter: str, selected_day: str) -> pd.DataFrame:
-    """Filters data based on selected time range and removes appliances with zero totals."""
+    """
+    Filters data within a specific time window based on the selected filter type (e.g. Day, Week).
+
+    Args:
+        f_data (pd.DataFrame): Full dataset.
+        t_filter (str): One of the keys from `time_filter` dict (e.g. 'Day').
+        selected_day (str): Reference start day in datetime.date format.
+
+    Returns:
+        pd.DataFrame: Filtered DataFrame limited to the selected date range and active appliances.
+    """
     filtered_data = f_data[
         f_data['date'].between(selected_day, selected_day + timedelta(days=time_filter[t_filter]["timedelta_days"]))
     ]
-
-    # Filter out appliances with total zero
-    filtered_data = filter_appliances_with_nonzero_sum(filtered_data)
-
-    return filtered_data
+    return filter_appliances_with_nonzero_sum(filtered_data)
 
 
 def get_earliest_date(dataset_path: str):
-    # Scan dataset folder names like 'date=YYYY-MM-DD'
+    """
+    Scans the dataset partition folder names and returns the earliest available date.
+
+    Args:
+        dataset_path (str): Root directory containing 'date=YYYY-MM-DD' subfolders.
+
+    Returns:
+        datetime.date or None: Earliest date found or None if no valid folders.
+    """
     dates = []
     for foldername in os.listdir(dataset_path):
         match = re.match(r"date=(\d{4})-(\d{2})-(\d{2})", foldername)
         if match:
             y, m, d = map(int, match.groups())
             dates.append(date(y, m, d))
-    if dates:
-        return min(dates)
-    else:
-        return None  # or some default date
+    return min(dates) if dates else None
 
 
 def load_data_by_date_range(dataset_path: str, start_date: date, end_date: date):
     """
-    Load data from the partitioned dataset between start_date and end_date (inclusive),
-    and filter out appliances with zero total consumption.
+    Loads data between two dates and filters out inactive appliances.
 
-    Parameters:
-    - dataset_path: path to the partitioned dataset
-    - start_date: datetime.date object representing the start date
-    - end_date: datetime.date object representing the end date
+    Args:
+        dataset_path (str): Path to partitioned dataset.
+        start_date (date): Start date (inclusive).
+        end_date (date): End date (inclusive).
 
     Returns:
-    - filtered DataFrame with data between the dates and appliances with non-zero consumption
+        pd.DataFrame: Filtered dataset within the specified range.
     """
     start_str = start_date.strftime("%Y-%m-%d")
     end_str = end_date.strftime("%Y-%m-%d")
 
     fingerprint = get_dataset_fingerprint(dataset_path)
     df = load_inferred_data_partitioned(dataset_path, start_str, end_str, fingerprint)
-    df_filtered = filter_appliances_with_nonzero_sum(df)
-
-    return df_filtered
+    return filter_appliances_with_nonzero_sum(df)
 
 
 def get_dataset_fingerprint(dataset_path: str) -> float:
     """
-    Returns the latest modification time of any file or folder inside the dataset directory.
+    Returns the latest modification time found within the dataset directory tree.
+
+    Args:
+        dataset_path (str): Path to the root of the dataset directory.
+
+    Returns:
+        float: Most recent modification timestamp.
     """
     latest_mtime = 0
     for root, dirs, files in os.walk(dataset_path):
@@ -124,8 +159,7 @@ def get_dataset_fingerprint(dataset_path: str) -> float:
             try:
                 full_path = os.path.join(root, name)
                 mtime = os.path.getmtime(full_path)
-                if mtime > latest_mtime:
-                    latest_mtime = mtime
+                latest_mtime = max(latest_mtime, mtime)
             except FileNotFoundError:
-                pass  # Might happen during folder writes
+                pass  # Can occur if a file is removed during walk
     return latest_mtime

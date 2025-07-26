@@ -13,7 +13,7 @@ def _get_consumption_and_cost(key_suffix: str, tariff_name: str):
     if df is None or df.empty:
         return 0.0, 0.0
 
-    # Compute total consumption in Wh for display (optional)
+    # Compute total consumption in Wh for display
     total_wh = df['value'].sum() * 10 / 3600
 
     # Compute cost using your detailed tariff function
@@ -23,13 +23,13 @@ def _get_consumption_and_cost(key_suffix: str, tariff_name: str):
 
 
 def display_consumption_metrics(cols, live_value=None, key_suffix: str = '_1', is_comparison: bool = False):
+    # Load values from session state or set defaults
     load_value(f'consumption_time_period{key_suffix}', 0.0)
     load_value(f'cost_time_period{key_suffix}', 0.0)
 
     consumption = st.session_state.get(f'consumption_time_period{key_suffix}', 0.0)
     cost = st.session_state.get(f'cost_time_period{key_suffix}', 0.0)
 
-    # Defaults for deltas
     consumption_delta_str = None
     cost_delta_str = None
 
@@ -41,18 +41,18 @@ def display_consumption_metrics(cols, live_value=None, key_suffix: str = '_1', i
         other_consumption = st.session_state.get(f'consumption_time_period{other_suffix}', 0.0)
         other_cost = st.session_state.get(f'cost_time_period{other_suffix}', 0.0)
 
-        if other_consumption != 0:
+        if other_consumption:
             consumption_delta = ((consumption - other_consumption) / other_consumption) * 100
             consumption_delta_str = f"{consumption_delta:.2f}%"
 
-        if other_cost != 0:
+        if other_cost:
             cost_delta = ((cost - other_cost) / other_cost) * 100
             cost_delta_str = f"{cost_delta:.2f}%"
 
     with cols[0]:
         st.metric(
             label=t('total_consumption'),
-            value=f"{format_value(consumption, 'Wh')}",
+            value=format_value(consumption, 'Wh'),
             delta=consumption_delta_str,
             delta_color="inverse"
         )
@@ -65,12 +65,10 @@ def display_consumption_metrics(cols, live_value=None, key_suffix: str = '_1', i
             delta_color='inverse'
         )
 
-    if live_value is not None:
+    if live_value is not None and len(cols) > 2:
         with cols[2]:
             st.metric(
                 label=t('total_live_power'),
-                value=f"{format_value(live_value, 'W')}",
-                delta=None  # No delta for live value
+                value=format_value(live_value, 'W'),
+                delta=None
             )
-
-

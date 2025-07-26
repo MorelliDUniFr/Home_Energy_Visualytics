@@ -18,7 +18,7 @@ from components.metrics import display_consumption_metrics
 from utils.consumption import compute_total_consumption
 from utils.data_loader import get_dataset_fingerprint
 from utils.data_loader import load_inferred_data_partitioned
-from utils.filters import filter_appliances_with_nonzero_sum
+from utils.filters import filter_appliances_with_nonzero_sum, get_date_ranges
 import pandas as pd
 from components.annotations import plot_annotations
 from utils.consumption import compute_total_consumption_and_cost
@@ -28,6 +28,8 @@ from streamlit_autorefresh import st_autorefresh
 cache = Cache(os.path.join(data_path, 'diskcache'))
 st_autorefresh(interval=10000, key="data_refresh")
 value = cache.get("live_power")
+
+get_date_ranges()
 
 st.title(body=t('page_1_title'), anchor=False)
 

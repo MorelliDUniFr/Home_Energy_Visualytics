@@ -31,12 +31,12 @@ def execute_cb():
 
 # Dialog for confirming deletion of appliance model and scaler files
 @st.dialog(t('dialog_deletion'))
-def dialog(name):
+def dialog(name, raw_appliance_name):
     st.write(f"{t('confirm_deletion')}: **{name}**?")
     col1, _, _, col2 = st.columns(4)
     with col1:
         if st.button("✅ " + t('confirm')):
-            base_name = name.replace(' ', '_').lower()
+            base_name = raw_appliance_name.replace(' ', '_').lower()
             try:
                 os.remove(os.path.join(data_path, models_dir, base_name + model_file))
                 os.remove(os.path.join(data_path, scalers_dir, target_scalers_dir, base_name + target_scalers_file))
@@ -57,8 +57,10 @@ with col3:
     model_files = sorted(os.listdir(os.path.join(data_path, models_dir)))
     scaler_files = sorted(os.listdir(os.path.join(data_path, scalers_dir, target_scalers_dir)))
 
-    appliances_names = [format_appliance_name(f) for f in model_files]
-    appliances_names = [translate_appliance_name(name) for name in appliances_names]
+    # appliances_names = [format_appliance_name(f) for f in model_files]
+    untransformed_appliances_names = [format_appliance_name(f) for f in model_files]
+    # Translate appliance names for display
+    appliances_names = [translate_appliance_name(name) for name in untransformed_appliances_names]
 
     # Extract appliance names from both sets of files
     model_appliances = {format_appliance_name(f) for f in model_files}
@@ -104,7 +106,8 @@ with col3:
         if event['selection']['rows']:
             selected_idx = event['selection']['rows'][0]
             appliance_name = appliances_names[selected_idx]
-            dialog(name=appliance_name)
+            raw_appliance_name = untransformed_appliances_names[selected_idx]
+            dialog(name=appliance_name, raw_appliance_name=raw_appliance_name)
 
 # Initialize uploader key if not present
 if 'file_uploader_key' not in ss:

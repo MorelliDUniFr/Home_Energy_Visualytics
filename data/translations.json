@@ -114,10 +114,10 @@
     "de": "Die Anzahl der Modell- und Skalierungsdateien stimmt nicht überein. Bitte stellen Sie sicher, dass jedes Modell eine entsprechende Skalierungsdatei hat"
   },
   "available_appliances": {
-    "en": "Available appliances: select to delete",
-    "it": "Elettrodomestici disponibili: seleziona per eliminare",
-    "fr": "Appareils disponibles : sélectionnez pour supprimer",
-    "de": "Verfügbare Geräte: zum Löschen auswählen"
+    "en": "Available appliances: select checkbox (left) to delete",
+    "it": "Elettrodomestici disponibili: seleziona la casella (a sinistra) per eliminare",
+    "fr": "Appareils disponibles : cochez la case (à gauche) pour supprimer",
+    "de": "Verfügbare Geräte: Aktivieren Sie das Kontrollkästchen (links), um zu löschen"
   },
   "upload": {
     "en": "Upload Appliance Model (.pt file) and its corresponding Scaler (.pkl file)",

@@ -110,3 +110,29 @@ sudo apt-get install docker-compose-plugin
 ```bash
 docker compose version
 ```
+
+# DA VERIFICARE
+### 3.6 Clone the repository
+```bash
+git clone https://github.com/MorelliDUniFr/Home_Energy_Visualytics.git
+```
+```bash 
+cd Home_Energy_Visualytics
+```
+```bash
+sudo chown -R morel:morel .
+```
+```bash
+sudo chmod -R 755 .
+```
+```bash
+docker compose up --build
+```
+
+### 3.7 Access the web interface
+Open a web browser and go to `http://192.168.1.125:8501`.
+You should see the Home Energy Visualytics web interface.
+
+
+# 4. XXXX
+If the raspberry pi is already configured, you can skip the first steps and you can just plug the gPlug into the wall socket and connect it to the desired Wi-Fi network (must be the same as the Raspberry Pi).

@@ -23,6 +23,14 @@
                     "period": "Year"
                 }
             ]
+        },
+        "06": {
+            "17": [
+                {
+                    "text": "Tutto bene",
+                    "period": "Day"
+                }
+            ]
         }
     }
 }

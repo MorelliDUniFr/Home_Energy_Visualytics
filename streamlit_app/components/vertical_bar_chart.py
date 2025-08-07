@@ -92,13 +92,30 @@ def plot_vertical_bar_chart(f_data_1, f_data_2, colors, time_period):
     grouped["formatted_value"] = grouped["value"].apply(format_value, unit="Wh")
 
     if st.session_state.v_bar_chart == "relative":
-        # Calculate percentage relative to the maximum per appliance across both periods
-        grouped['percentage'] = grouped.groupby('appliance', observed=False)['value'].transform(
-            lambda x: 100 * x / x.max() if x.max() > 0 else 0)
+        # Pivot data to have appliances as rows and time periods as columns with 'value'
+        pivot = grouped.pivot(index='appliance', columns=time_period, values='value')
+
+        # Replace zeros in date_1 to avoid division by zero — you could also keep zeros if you want 0% in that case
+        pivot[date_1] = pivot[date_1].replace(0, float('nan'))
+
+        # Calculate percentage relative to date_1 baseline
+        pivot_percentage = pd.DataFrame({
+            date_1: 100,  # baseline 100%
+            date_2: (pivot[date_2] / pivot[date_1]) * 100
+        })
+
+        # Melt to long format for merging
+        percentage_long = pivot_percentage.reset_index().melt(id_vars='appliance', var_name=time_period,
+                                                              value_name='percentage')
+
+        # Merge with original grouped data
+        grouped = pd.merge(grouped, percentage_long, on=['appliance', time_period], how='left')
+
+        # Set plotting column to 'percentage'
         y_column = 'percentage'
         y_label = t('energy_consumption') + ' (%)'
         hover_text = '%{customdata[0]}<extra></extra>'
-        grouped["custom"] = grouped["value"]  # Show actual Wh in hover text if needed
+        grouped["custom"] = grouped["value"]  # show actual Wh in hover tooltip
     else:
         y_column = 'value'
         y_label = t('energy_consumption') + ' (Wh)'
@@ -147,9 +164,9 @@ def plot_vertical_bar_chart(f_data_1, f_data_2, colors, time_period):
         bargap=0.2,
         bargroupgap=0.2,
         showlegend=False,
-        dragmode=False,
-        xaxis_fixedrange=True,
-        yaxis_fixedrange=True,
+        dragmode="zoom",
+        xaxis_fixedrange=False,
+        yaxis_fixedrange=False,
     )
 
     # Tooltip formatting

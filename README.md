@@ -15,6 +15,7 @@
    - [Access the web interface](#access-the-web-interface)
 4. [Quick Start](#quick-start)
 
+
 ## 1. Introduction
 Home Energy Visualytics is a lightweight platform designed to monitor, visualize, and analyze household energy consumption. Using a Raspberry Pi connected to an IoT device (gPlug), the system collects telemetry data from the smart meter, enabling users to track usage patterns, detect anomalies, and gain insights for energy efficiency.
 This guide provides step-by-step instructions for hardware setup, software installation, and accessing the web-based dashboard.

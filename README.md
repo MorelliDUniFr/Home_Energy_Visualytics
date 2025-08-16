@@ -1,10 +1,23 @@
 # Home Energy Visualytics
 
 # Table of Contents
-TODO
+1. [Introduction](#introduction)
+2. [Hardware Setup](#hardware-setup)
+   - [Configuration of Raspberry Pi via the Pi imager](#configuration-of-raspberry-pi-via-the-pi-imager)
+   - [Setting up the gPlug](#setting-up-the-gplug)
+3. [Software Setup](#software-setup)
+   - [Access to Raspberry Pi](#access-to-raspberry-pi)
+   - [Install dependencies](#install-dependencies)
+   - [Installing docker](#installing-docker)
+   - [Prepare the environment](#prepare-the-environment)
+   - [Installing Docker compose](#installing-docker-compose)
+   - [Clone the repository](#clone-the-repository)
+   - [Access the web interface](#access-the-web-interface)
+4. [Quick Start](#quick-start)
 
 ## 1. Introduction
-TODO
+Home Energy Visualytics is a lightweight platform designed to monitor, visualize, and analyze household energy consumption. Using a Raspberry Pi connected to an IoT device (gPlug), the system collects telemetry data from the smart meter, enabling users to track usage patterns, detect anomalies, and gain insights for energy efficiency.
+This guide provides step-by-step instructions for hardware setup, software installation, and accessing the web-based dashboard.
 
 ## 2. Hardware Setup
 ### 2.1 Configuration of Raspberry Pi via the Pi imager
@@ -111,7 +124,6 @@ sudo apt-get install docker-compose-plugin
 docker compose version
 ```
 
-# DA VERIFICARE
 ### 3.6 Clone the repository
 ```bash
 git clone https://github.com/MorelliDUniFr/Home_Energy_Visualytics.git
@@ -133,6 +145,5 @@ docker compose up --build
 Open a web browser and go to `http://192.168.1.125:8501`.
 You should see the Home Energy Visualytics web interface.
 
-
-# 4. XXXX
+# 4. Quick Start
 If the raspberry pi is already configured, you can skip the first steps and you can just plug the gPlug into the wall socket and connect it to the desired Wi-Fi network (must be the same as the Raspberry Pi).

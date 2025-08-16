@@ -1,11 +1,12 @@
 # Home Energy Visualytics
 
-# Table of Contents
+## Table of Contents
 1. [Introduction](#introduction)
-2. [Hardware Setup](#hardware-setup)
+2. [Quick Start](#quick-start)
+3. [Hardware Setup](#hardware-setup)
    - [Configuration of Raspberry Pi via the Pi imager](#configuration-of-raspberry-pi-via-the-pi-imager)
    - [Setting up the gPlug](#setting-up-the-gplug)
-3. [Software Setup](#software-setup)
+4. [Software Setup](#software-setup)
    - [Access to Raspberry Pi](#access-to-raspberry-pi)
    - [Install dependencies](#install-dependencies)
    - [Installing docker](#installing-docker)
@@ -13,15 +14,16 @@
    - [Installing Docker compose](#installing-docker-compose)
    - [Clone the repository](#clone-the-repository)
    - [Access the web interface](#access-the-web-interface)
-4. [Quick Start](#quick-start)
-
 
 ## 1. Introduction
 Home Energy Visualytics is a lightweight platform designed to monitor, visualize, and analyze household energy consumption. Using a Raspberry Pi connected to an IoT device (gPlug), the system collects telemetry data from the smart meter, enabling users to track usage patterns, detect anomalies, and gain insights for energy efficiency.
 This guide provides step-by-step instructions for hardware setup, software installation, and accessing the web-based dashboard.
 
-## 2. Hardware Setup
-### 2.1 Configuration of Raspberry Pi via the Pi imager
+# 2. Quick Start
+If the raspberry pi is already configured, you can skip the first steps and you can just plug the gPlug into the wall socket and connect it to the desired Wi-Fi network (must be the same as the Raspberry Pi).
+
+## 3. Hardware Setup
+### 3.1 Configuration of Raspberry Pi via the Pi imager
 If you don't have the Raspberry Pi Imager installed, you can download it from the official Raspberry Pi website. The imager allows you to easily set up your Raspberry Pi with the desired operating system and configurations.
 1. Download the Raspberry Pi Imager from the official website: https://www.raspberrypi.com/software/
 1. Select Device: Raspberry Pi 5
@@ -42,11 +44,11 @@ Click next and then select the following options (under _modify settings_):
 
 Once is all done, click on _Save_ and then _Write_ to flash the SD card with the selected configurations. This process may take a few minutes.
 
-### 2.2 Setting up the gPlug
+### 3.2 Setting up the gPlug
 This set up is very simple, just plug the gPlug into the wall socket and connect it to the desired Wi-Fi network (must be the same as the Raspberry Pi).
 
-## 3. Software Setup
-### 3.1 Access to Raspberry Pi
+## 4. Software Setup
+### 4.1 Access to Raspberry Pi
 ```bash
 ssh morel@raspberrypi.local
 ```
@@ -62,7 +64,7 @@ sudo apt upgrade
 
 it can take a while...
 
-### 3.3 Installing docker
+### 4.3 Installing docker
 ```bash
 sudo apt-get update
 ```
@@ -97,7 +99,7 @@ Verify the installation:
 sudo docker run hello-world
 ```
 
-### 3.4 Prepare the environment
+### 4.4 Prepare the environment
 Create a directory for the project:
 ```bash
 sudo mkdir /home/pi
@@ -114,7 +116,7 @@ sudo usermod -aG docker morel
 sudo reboot
 ```
 
-### 3.5 Installing Docker compose
+### 4.5 Installing Docker compose
 ```bash
 sudo apt-get update
 ```
@@ -125,7 +127,7 @@ sudo apt-get install docker-compose-plugin
 docker compose version
 ```
 
-### 3.6 Clone the repository
+### 4.6 Clone the repository
 ```bash
 git clone https://github.com/MorelliDUniFr/Home_Energy_Visualytics.git
 ```
@@ -142,9 +144,7 @@ sudo chmod -R 755 .
 docker compose up --build
 ```
 
-### 3.7 Access the web interface
+### 4.7 Access the web interface
 Open a web browser and go to `http://192.168.1.125:8501`.
 You should see the Home Energy Visualytics web interface.
 
-# 4. Quick Start
-If the raspberry pi is already configured, you can skip the first steps and you can just plug the gPlug into the wall socket and connect it to the desired Wi-Fi network (must be the same as the Raspberry Pi).

@@ -39,6 +39,7 @@ def read_appliances_from_files(models_dir_path) -> list[str]:
 
     appliance_names = [format_appliance_name(f) for f in model_files]
     # Sort alphabetically but 'Other' always last
+    appliance_names.append('Other')
     appliance_names.sort(key=lambda x: (x == 'Other', x))
     return appliance_names
 
@@ -47,10 +48,11 @@ def read_appliances_from_files(models_dir_path) -> list[str]:
 def generate_appliance_colors(names: list[str], palette: list[str]) -> dict:
     """
     Assign colors to each appliance from the given color palette.
-    'Other' gets a fixed grey color.
-    Colors cycle through palette if fewer colors than appliances.
+    'Other' gets a fixed gray color.
+    Colors cycle through the palette if fewer colors than appliances.
     """
     colors = {}
+    print(names)
     for i, app in enumerate(names):
         if app == 'Other':
             colors[app] = 'rgb(153, 153, 153)'  # fixed grey for 'Other'

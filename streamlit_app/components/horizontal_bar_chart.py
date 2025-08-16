@@ -87,9 +87,9 @@ def plot_horizontal_bar_chart(data, colors, chart_key):
         yaxis=dict(categoryorder="total ascending"),
         showlegend=False,
         margin=dict(l=40, r=40, t=40, b=40),
-        dragmode=False,  # Disable box/lasso/zoom selection
-        xaxis_fixedrange=True,  # Prevent zoom/pan on X-axis
-        yaxis_fixedrange=True,  # Prevent zoom/pan on Y-axis
+        dragmode="zoom",
+        xaxis_fixedrange=False,
+        yaxis_fixedrange=False,
     )
 
     # Render the figure in Streamlit with the provided key

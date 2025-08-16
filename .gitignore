@@ -3,3 +3,5 @@
 *.DS_Store
 _MACOSX/
 *.idea
+__pycache__/
+*.pyc

@@ -353,7 +353,7 @@ def main():
 
     hidden_sizes = [128, 256, 512]
     sequence_lengths = [120, 360, 720]
-    strides = [0.25, 0.5]
+    strides = [0.1, 0.25, 0.5]
     num_layers = [2, 3, 4, 5]
 
     param_grid = list(

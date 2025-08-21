@@ -1,5 +1,6 @@
 *.parquet
-*.csv
+!data/demo_dataset/**/*.parquet
+!data/real_world/**/*.parquet
 *.DS_Store
 _MACOSX/
 *.idea

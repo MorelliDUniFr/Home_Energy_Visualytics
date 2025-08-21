@@ -1,6 +1,6 @@
 *.parquet
 !data/demo_dataset/**/*.parquet
-!data/real_world/**/*.parquet
+!data/real_world_data/**/*.parquet
 *.DS_Store
 _MACOSX/
 *.idea
